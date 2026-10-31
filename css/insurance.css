@@ -1,0 +1,311 @@
+/* css/insurance.css — страница «Страховые компании» */
+
+/* 6.1 Карточка-вступление */
+.insurance-intro {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  align-items: center;
+  gap: var(--pad);
+}
+
+.insurance-intro__text {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.insurance-intro__media img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 18px;
+}
+
+/* 6.2 Две карточки страховых компаний */
+.insurers-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+.insurer-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.insurer-logo-wrap {
+  height: 76px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.insurer-logo {
+  max-width: 180px;
+  max-height: 76px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.insurer-name {
+  margin: 0 0 6px;
+}
+
+.insurer-branch {
+  margin: 0 0 16px;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.insurer-hotline-label {
+  margin: 0 0 4px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.insurer-hotline {
+  display: inline-block;
+  margin-bottom: 20px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.insurer-hotline:hover {
+  color: var(--teal-700);
+}
+
+.insurer-btn {
+  width: 100%;
+  margin-top: auto;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--teal-100);
+  color: var(--ink);
+  border-radius: 12px;
+}
+
+.insurer-btn:hover {
+  background: var(--teal-050);
+}
+
+.insurer-btn__icon {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+/* 6.3 Нижний ряд */
+.insurance-bottom {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 24px;
+  align-items: stretch;
+}
+
+.memo-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.memo-text {
+  margin: 0 0 20px;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.memo-btn {
+  width: 100%;
+  margin-top: auto;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--teal-100);
+  color: var(--ink);
+  border-radius: 12px;
+}
+
+.memo-btn:hover {
+  background: var(--teal-050);
+}
+
+.memo-btn__icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.oms-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.oms-steps {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.oms-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  position: relative;
+  padding-top: 6px;
+}
+
+.oms-step-num {
+  position: absolute;
+  top: -6px;
+  right: 8%;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-pill);
+  background: var(--teal-600);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.oms-step-icon {
+  width: 64px;
+  height: 64px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--teal-050);
+  border-radius: 14px;
+  color: var(--teal-700);
+}
+
+.oms-step-icon svg {
+  width: 40px;
+  height: 40px;
+}
+
+.oms-step-label {
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.oms-step-chevron {
+  align-self: center;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--muted);
+  user-select: none;
+}
+
+/* Адаптивность */
+@media (max-width: 1100px) {
+  .insurance-intro,
+  .insurer-card,
+  .memo-card,
+  .oms-card {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 980px) {
+  .insurance-intro,
+  .insurance-bottom {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .insurers-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .insurance-intro,
+  .insurers-grid,
+  .insurance-bottom {
+    grid-template-columns: 1fr;
+  }
+
+  .oms-steps {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .oms-step {
+    flex-direction: row;
+    align-items: center;
+    text-align: left;
+    gap: 14px;
+    padding-top: 0;
+  }
+
+  .oms-step-num {
+    position: static;
+    flex: none;
+  }
+
+  .oms-step-label {
+    flex: 1;
+  }
+
+  .oms-step-chevron {
+    display: none;
+  }
+
+  .insurer-btn,
+  .memo-btn {
+    width: 100%;
+  }
+}
+
+/* Режим высокой контрастности / доступности */
+html.a11y-mode .insurance-intro,
+html.a11y-mode .insurer-card,
+html.a11y-mode .memo-card,
+html.a11y-mode .oms-card {
+  background: #fff;
+  border: 2px solid #000;
+  box-shadow: none;
+}
+
+html.a11y-mode .insurance-intro__media img,
+html.a11y-mode .insurer-logo {
+  border: 2px solid #000;
+}
+
+html.a11y-mode .insurer-btn,
+html.a11y-mode .memo-btn {
+  background: #fff;
+  border: 2px solid #000;
+  color: #000;
+}
+
+html.a11y-mode .oms-step-num {
+  background: #000;
+  color: #fff;
+}
+
+html.a11y-mode .oms-step-icon,
+html.a11y-mode .oms-step-chevron {
+  color: #000;
+}
