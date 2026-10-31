@@ -1,0 +1,323 @@
+/* css/services.css — страница «Услуги» */
+
+/* ===== Контейнер страницы ===== */
+.services-page {
+  min-width: 0;
+  margin-top: 32px;
+}
+
+/* ===== 4.1 Карточка-вступление ===== */
+.services-intro {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  align-items: center;
+  gap: var(--pad);
+}
+
+.services-intro__text p {
+  margin: 0 0 16px;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.services-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 16px;
+  border-radius: var(--r-pill);
+  background-color: var(--green-100);
+  color: var(--green-700);
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.services-intro__media img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 18px;
+}
+
+/* ===== 4.2 Сетка услуг ===== */
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.service-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.service-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 16px;
+  background-color: var(--teal-050);
+  border-radius: var(--r-sm);
+  color: var(--teal-700);
+}
+
+.service-icon svg {
+  width: 40px;
+  height: 40px;
+}
+
+.service-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.service-text p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.service-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  color: var(--teal-700);
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.18s ease;
+}
+
+.service-link:hover {
+  color: var(--teal-800);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.service-link:focus-visible {
+  outline: 2px solid var(--teal-600);
+  outline-offset: 2px;
+  border-radius: var(--r-xs);
+}
+
+.service-link__arrow {
+  flex: none;
+  transition: transform 0.18s ease;
+}
+
+.service-link:hover .service-link__arrow {
+  transform: translateX(3px);
+}
+
+.service-note {
+  margin: -8px 0 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* ===== 4.3 CTA-блок ===== */
+.services-cta {
+  background-color: var(--teal-800);
+  border-radius: var(--r-lg);
+  padding: 38px;
+  color: #fff;
+  box-shadow: var(--shadow-md);
+}
+
+.services-cta__title {
+  margin: 0 0 12px;
+  font-size: clamp(1.47rem, 2.2vw, 1.82rem);
+  font-weight: 700;
+  line-height: 1.18;
+  letter-spacing: -0.015em;
+  color: #fff;
+}
+
+.services-cta__text {
+  margin: 0 0 24px;
+  max-width: 60ch;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.services-cta__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 24px;
+}
+
+.services-cta__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 50px;
+  padding: 0 26px;
+  background-color: var(--teal-100);
+  color: var(--teal-800);
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.services-cta__btn:hover {
+  background-color: #fff;
+  color: var(--teal-800);
+}
+
+.services-cta__btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.services-cta__phone {
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.4;
+  text-decoration: none;
+  transition: opacity 0.18s ease;
+}
+
+.services-cta__phone:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.services-cta__phone:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+  border-radius: var(--r-xs);
+}
+
+/* ===== Адаптивность ===== */
+@media (max-width: 1100px) {
+  .services-intro,
+  .service-card {
+    padding: 24px;
+  }
+
+  .services-cta {
+    padding: 30px 26px;
+  }
+}
+
+@media (max-width: 980px) {
+  .services-page {
+    margin-top: 24px;
+  }
+
+  .services-intro {
+    grid-template-columns: 1fr;
+  }
+
+  .services-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .services-page {
+    margin-top: 20px;
+  }
+
+  .services-intro,
+  .service-card {
+    padding: 22px 20px;
+  }
+
+  .services-cta {
+    padding: 26px 20px;
+  }
+
+  .services-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .services-cta__actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .services-cta__btn {
+    width: 100%;
+  }
+
+  .services-cta__phone {
+    align-self: flex-start;
+  }
+}
+
+/* ===== Режим слабовидящих ===== */
+html.a11y-mode .services-intro,
+html.a11y-mode .service-card,
+html.a11y-mode .services-cta {
+  background: #ffffff;
+  border: 2px solid #000000;
+  box-shadow: none;
+}
+
+html.a11y-mode .services-intro__text p,
+html.a11y-mode .service-text p,
+html.a11y-mode .service-note,
+html.a11y-mode .services-cta__title,
+html.a11y-mode .services-cta__text {
+  color: #000000;
+}
+
+html.a11y-mode .services-badge {
+  background: #ffffff;
+  border: 2px solid #000000;
+  color: #000000;
+}
+
+html.a11y-mode .services-intro__media img {
+  border: 2px solid #000000;
+}
+
+html.a11y-mode .service-icon {
+  background: #ffffff;
+  border: 2px solid #000000;
+  color: #000000;
+}
+
+html.a11y-mode .service-link {
+  color: #000000;
+  text-decoration: underline;
+}
+
+html.a11y-mode .service-link:hover {
+  color: #000000;
+}
+
+html.a11y-mode .services-cta__btn {
+  background: #ffffff;
+  border: 2px solid #000000;
+  color: #000000;
+}
+
+html.a11y-mode .services-cta__btn:hover {
+  background: #ffffff;
+  color: #000000;
+}
+
+html.a11y-mode .services-cta__phone {
+  color: #000000;
+  text-decoration: underline;
+}
