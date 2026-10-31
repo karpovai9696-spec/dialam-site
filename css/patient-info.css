@@ -1,0 +1,222 @@
+/* css/patient-info.css — обязательные страницы раздела «Пациентам» */
+
+/* ===== Контейнер страницы ===== */
+.patient-page {
+  min-width: 0;
+}
+
+/* ===== Вступление ===== */
+.patient-intro {
+  /* использует общие классы .glass-card .content-card */
+}
+
+.patient-text {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.patient-intro .patient-text {
+  font-size: 1.05rem;
+}
+
+/* ===== Карточка раздела ===== */
+.patient-card {
+  /* использует общие классы .glass-card .content-card */
+}
+
+.patient-title {
+  /* использует общий класс .content-card__title */
+}
+
+/* ===== Списки ===== */
+.patient-list {
+  margin: 0;
+  padding-left: 22px;
+  list-style: disc;
+}
+
+.patient-list li {
+  margin-bottom: 10px;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.patient-list li:last-child {
+  margin-bottom: 0;
+}
+
+.patient-list li::marker {
+  color: var(--teal-600);
+}
+
+/* ===== Нумерованные шаги ===== */
+.steps-list {
+  margin: 0;
+  padding-left: 24px;
+  list-style: decimal;
+}
+
+.steps-list li {
+  margin-bottom: 10px;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.steps-list li:last-child {
+  margin-bottom: 0;
+}
+
+.steps-list li::marker {
+  color: var(--teal-600);
+  font-weight: 600;
+}
+
+/* ===== Примечание ===== */
+.patient-note {
+  margin: 16px 0 0;
+  padding: 12px 16px;
+  background-color: var(--teal-050);
+  border-radius: var(--r-sm);
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+/* ===== Кнопка-документ / ссылка-кнопка ===== */
+.patient-doc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  padding: 0 20px;
+  background-color: var(--teal-100);
+  color: var(--ink);
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  transition: background-color 0.18s ease;
+}
+
+.patient-doc-btn:hover {
+  background-color: var(--teal-050);
+}
+
+.patient-doc-btn:focus-visible {
+  outline: 2px solid var(--teal-600);
+  outline-offset: 2px;
+}
+
+.patient-doc-btn__icon {
+  flex: none;
+  color: var(--teal-700);
+}
+
+/* ===== Группа действий ===== */
+.patient-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.patient-actions .patient-doc-btn {
+  margin-top: 0;
+}
+
+/* ===== Ссылки внутри списков и текста ===== */
+.patient-link {
+  color: var(--teal-700);
+  text-decoration: none;
+}
+
+.patient-link:hover {
+  color: var(--teal-800);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.patient-link:focus-visible {
+  outline: 2px solid var(--teal-600);
+  outline-offset: 2px;
+  border-radius: var(--r-xs);
+}
+
+/* ===== Адаптивность ===== */
+@media (max-width: 1100px) {
+  .patient-intro,
+  .patient-card {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 620px) {
+  .patient-intro,
+  .patient-card {
+    padding: 22px 20px;
+  }
+
+  .patient-list,
+  .steps-list {
+    padding-left: 20px;
+  }
+
+  .patient-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .patient-doc-btn {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* ===== Режим слабовидящих ===== */
+html.a11y-mode .patient-intro,
+html.a11y-mode .patient-card {
+  background: #ffffff;
+  border: 2px solid #000000;
+  box-shadow: none;
+}
+
+html.a11y-mode .patient-text,
+html.a11y-mode .patient-list li,
+html.a11y-mode .steps-list li,
+html.a11y-mode .patient-note {
+  color: #000000;
+}
+
+html.a11y-mode .patient-note {
+  background: #ffffff;
+  border: 2px solid #000000;
+}
+
+html.a11y-mode .patient-list li::marker,
+html.a11y-mode .steps-list li::marker {
+  color: #000000;
+}
+
+html.a11y-mode .patient-link {
+  color: #000000;
+  text-decoration: underline;
+}
+
+html.a11y-mode .patient-doc-btn {
+  background: #ffffff;
+  border: 2px solid #000000;
+  color: #000000;
+}
+
+html.a11y-mode .patient-doc-btn:hover {
+  background: #ffffff;
+}
+
+html.a11y-mode .patient-doc-btn__icon {
+  color: #000000;
+}
