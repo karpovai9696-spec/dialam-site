@@ -1,0 +1,407 @@
+/* css/legal-pages.css — юридические страницы раздела «О клинике» */
+
+/* ===== Контейнер страницы ===== */
+.legal-page {
+  min-width: 0;
+}
+
+/* ===== Вступление ===== */
+.legal-intro .legal-text {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+/* ===== Карточка ===== */
+.legal-card .legal-text {
+  margin: 0 0 16px;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.legal-title {
+  margin-top: 0;
+}
+
+/* Padding карточек раздела */
+.legal-intro:not([class*="__"]),
+.legal-card,
+.staff-card {
+  padding: 32px;
+}
+
+/* ===== Список «подпись — значение» ===== */
+.legal-facts {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.legal-fact {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 8px 20px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.legal-fact:last-child {
+  border-bottom: none;
+}
+
+.legal-fact__label {
+  font-size: 0.941rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.legal-fact__value {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--ink);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.legal-fact__value a {
+  color: var(--teal-700);
+}
+
+.legal-fact__value a:hover {
+  color: var(--teal-800);
+}
+
+/* ===== Примечание ===== */
+.legal-note {
+  margin: 18px 0 0;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+/* ===== Кнопки документов ===== */
+.legal-doc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  padding: 0 20px;
+  background-color: var(--teal-100);
+  border-radius: 12px;
+  color: var(--ink);
+  font-size: 0.941rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: normal;
+  transition: background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.legal-doc-btn:hover {
+  background-color: var(--teal-050);
+  box-shadow: var(--shadow-sm);
+}
+
+.legal-doc-btn__icon {
+  flex: none;
+  color: var(--teal-700);
+}
+
+.legal-docs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.legal-doc-btn--row {
+  width: 100%;
+  justify-content: flex-start;
+  background-color: var(--teal-050);
+  border: 1px solid var(--border);
+  font-weight: 500;
+}
+
+.legal-doc-btn--row:hover {
+  background-color: var(--teal-100);
+  border-color: var(--teal-100);
+  box-shadow: var(--shadow-sm);
+}
+
+.legal-actions {
+  display: flex;
+}
+
+/* ===== Ссылка ===== */
+.legal-link {
+  color: var(--teal-700);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.legal-link:hover {
+  color: var(--teal-800);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ===== Сетка руководителей ===== */
+.staff-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
+/* ===== Вертикальный список сотрудников ===== */
+.staff-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ===== Карточка сотрудника ===== */
+.staff-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  min-width: 0;
+}
+
+.staff-card__media {
+  flex: none;
+  width: 100%;
+}
+
+.staff-card__media img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  object-position: center top;
+  border-radius: 16px;
+}
+
+.staff-card__body {
+  min-width: 0;
+  width: 100%;
+}
+
+.staff-card__role {
+  margin: 0 0 6px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--teal-700);
+}
+
+.staff-card__name {
+  margin: 0 0 12px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+.staff-contacts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.staff-contacts p {
+  margin: 0;
+  font-size: 0.941rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.staff-contacts a {
+  color: var(--teal-700);
+  text-decoration: none;
+}
+
+.staff-contacts a:hover {
+  color: var(--teal-800);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ===== Подробная карточка (фото слева, данные справа) ===== */
+.staff-card--detail .staff-card__media {
+  width: 220px;
+}
+
+.staff-card--detail {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.staff-card__data {
+  display: flex;
+  flex-direction: column;
+}
+
+.staff-data-row {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 8px 20px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.staff-data-row:last-child {
+  border-bottom: none;
+}
+
+.staff-data-row__label {
+  font-size: 0.941rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.staff-data-row__value {
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--ink);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.staff-data-row__value a {
+  color: var(--teal-700);
+  text-decoration: none;
+}
+
+.staff-data-row__value a:hover {
+  color: var(--teal-800);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ===== Адаптивность ===== */
+@media (max-width: 1100px) {
+  .legal-intro,
+  .legal-card,
+  .staff-card {
+    padding: 24px;
+  }
+
+  .legal-fact,
+  .staff-data-row {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 980px) {
+  .staff-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .staff-card--detail .staff-card__media {
+    width: 180px;
+  }
+}
+
+@media (max-width: 768px) {
+  .legal-fact,
+  .staff-data-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
+
+@media (max-width: 620px) {
+  .legal-intro,
+  .legal-card,
+  .staff-card {
+    padding: 22px 20px;
+  }
+
+  .staff-card--detail {
+    flex-direction: column;
+  }
+
+  .staff-card--detail .staff-card__media {
+    width: 100%;
+  }
+
+  .legal-doc-btn,
+  .legal-actions .legal-doc-btn {
+    width: 100%;
+  }
+
+  .staff-grid,
+  .staff-list {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+/* ===== Режим слабовидящих ===== */
+html.a11y-mode .legal-intro,
+html.a11y-mode .legal-card,
+html.a11y-mode .staff-card {
+  background: #ffffff;
+  border: 2px solid #000000;
+  box-shadow: none;
+}
+
+html.a11y-mode .legal-text,
+html.a11y-mode .legal-fact__value,
+html.a11y-mode .staff-card__name,
+html.a11y-mode .staff-card__role,
+html.a11y-mode .staff-contacts p,
+html.a11y-mode .staff-data-row__value {
+  color: #000000;
+}
+
+html.a11y-mode .legal-fact__label,
+html.a11y-mode .staff-data-row__label,
+html.a11y-mode .legal-note {
+  color: #000000;
+}
+
+html.a11y-mode .legal-fact,
+html.a11y-mode .staff-data-row {
+  border-bottom: 2px solid #000000;
+}
+
+html.a11y-mode .legal-doc-btn {
+  background: #ffffff;
+  border: 2px solid #000000;
+  color: #000000;
+  box-shadow: none;
+}
+
+html.a11y-mode .legal-doc-btn:hover {
+  background: #ffffff;
+  box-shadow: none;
+}
+
+html.a11y-mode .legal-doc-btn__icon {
+  color: #000000;
+}
+
+html.a11y-mode .legal-link,
+html.a11y-mode .legal-fact__value a,
+html.a11y-mode .staff-contacts a,
+html.a11y-mode .staff-data-row__value a {
+  color: #000000;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+html.a11y-mode .staff-card__media img {
+  border: 2px solid #000000;
+}
