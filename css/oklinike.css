@@ -1,0 +1,434 @@
+/* ===== 1. INTRO CARD ===== */
+.intro-card {
+  padding: 32px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: 28px;
+  align-items: center;
+}
+
+.intro-card__lead {
+  font-size: clamp(1.235rem, 1.9vw, 1.529rem);
+  font-weight: 500;
+  line-height: 1.38;
+  color: var(--ink);
+}
+
+.intro-card__media {
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background-color: var(--teal-050);
+  box-shadow: var(--shadow-sm);
+}
+
+.intro-card__img {
+  width: 100%;
+  aspect-ratio: 5 / 4;
+  object-fit: cover;
+}
+
+/* ===== 2. LEADERSHIP CARD ===== */
+.leaders-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.leaders-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.leader-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.leader-item__media {
+  border-radius: 16px;
+  overflow: hidden;
+  background-color: var(--teal-050);
+}
+
+.leader-item__img {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  object-position: center top;
+}
+
+.leader-item__info {
+  margin-top: 12px;
+}
+
+.leader-item__role {
+  font-size: 0.853rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.leader-item__name {
+  margin-top: 3px;
+  font-size: 1.059rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ink);
+}
+
+.leader-item__meta {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.824rem;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.leader-item__meta a {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.leader-item__meta a:hover {
+  color: var(--teal-700);
+}
+
+/* Quick links & Team showcase */
+.leaders-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.quick-links-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.quick-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 46px;
+  padding: 10px 14px;
+  border-radius: var(--r-pill);
+  background-color: #e4eaf1;
+  color: var(--ink);
+  font-size: 0.882rem;
+  font-weight: 500;
+  line-height: 1.25;
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.quick-link:hover {
+  background-color: var(--teal-100);
+  color: var(--teal-800);
+}
+
+.team-showcase {
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(228, 234, 241, 0.65);
+}
+
+.team-showcase__media {
+  border-radius: 14px;
+  overflow: hidden;
+  background-color: var(--teal-050);
+}
+
+.team-showcase__img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.team-showcase__caption {
+  margin-top: 10px;
+  font-size: 0.941rem;
+  font-weight: 500;
+  color: var(--ink);
+  text-align: right;
+}
+
+/* ===== 3. GENERAL ORGANIZATION INFO CARD ===== */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.info-pill {
+  padding: 14px 18px;
+  border-radius: var(--r-sm);
+  background-color: #e4eaf1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-wrap: anywhere;
+}
+
+.info-pill--wide {
+  grid-column: 1 / -1;
+}
+
+.info-pill__label {
+  font-size: 0.824rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.info-pill__value {
+  font-size: 0.971rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.info-pill__value a {
+  color: var(--teal-700);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.info-pill__value a:hover {
+  color: var(--teal-800);
+}
+
+.org-badges {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.org-badge {
+  padding: 16px 20px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.org-badge--green {
+  background-color: var(--green-100);
+  color: var(--green-700);
+}
+
+.org-badge--teal {
+  background-color: var(--teal-100);
+  color: var(--ink);
+}
+
+.org-badge__title {
+  font-size: 1.294rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.org-badge__sub {
+  font-size: 0.941rem;
+  font-weight: 500;
+}
+
+/* ===== 4. STRUCTURE AND GOVERNANCE CARD ===== */
+.structure-text {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.reception-block {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(15, 118, 132, 0.14);
+}
+
+.reception-block__title {
+  font-size: 1.059rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+
+.reception-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.reception-list__item {
+  padding: 10px 0;
+  font-size: 0.941rem;
+  line-height: 1.5;
+  color: var(--text);
+  border-bottom: 1px solid rgba(15, 118, 132, 0.10);
+}
+
+.reception-list__item:first-child {
+  padding-top: 0;
+}
+
+.reception-list__item:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.reception-list__role {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.reception-list__item a {
+  color: var(--teal-700);
+  font-weight: 500;
+}
+
+.reception-list__item a:hover {
+  color: var(--teal-800);
+  text-decoration: underline;
+}
+
+/* ===== 5. CLINIC NETWORK ADDRESSES CARD ===== */
+.centers-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.center-item {
+  padding: 20px 22px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(15, 118, 132, 0.14);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.center-item.is-active {
+  background-color: var(--teal-050);
+  border: 1.5px solid var(--teal-700);
+  box-shadow: 0 8px 20px rgba(15, 118, 132, 0.10);
+}
+
+.center-item__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.center-item__city {
+  font-size: 1.235rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.center-item__badge {
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  background-color: var(--teal-700);
+  color: #ffffff;
+  font-size: 0.765rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.center-item__addr {
+  font-size: 0.941rem;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.center-item__phone {
+  margin-top: auto;
+  padding-top: 4px;
+  font-size: 1.059rem;
+  font-weight: 700;
+  color: var(--ink);
+  align-self: flex-start;
+}
+
+.center-item__phone:hover {
+  color: var(--teal-700);
+}
+
+/* ===== VISUALLY IMPAIRED MODE OVERRIDES (OKLINIKE) ===== */
+html.a11y-mode .info-pill,
+html.a11y-mode .quick-link,
+html.a11y-mode .center-item,
+html.a11y-mode .org-badge,
+html.a11y-mode .team-showcase {
+  background: #ffffff;
+  color: #000000;
+  border: 2px solid #000000;
+  box-shadow: none;
+}
+
+html.a11y-mode .center-item.is-active,
+html.a11y-mode .center-item__badge {
+  background: #000000;
+  color: #ffffff;
+  border: 2px solid #000000;
+  box-shadow: none;
+}
+
+html.a11y-mode .center-item.is-active .center-item__city,
+html.a11y-mode .center-item.is-active .center-item__addr,
+html.a11y-mode .center-item.is-active .center-item__phone {
+  color: #ffffff;
+}
+
+html.a11y-mode .intro-card__media,
+html.a11y-mode .leader-item__media,
+html.a11y-mode .team-showcase__media {
+  border: 2px solid #000000;
+  box-shadow: none;
+}
+
+html.a11y-mode .reception-block,
+html.a11y-mode .reception-list__item {
+  border-color: #000000;
+}
+
+/* ===== RESPONSIVE: OKLINIKE ===== */
+@media (max-width: 980px) {
+  .intro-card {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .leaders-layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+
+@media (max-width: 620px) {
+  .intro-card {
+    padding: 22px 20px;
+  }
+
+  .leaders-pair,
+  .quick-links-grid,
+  .info-grid,
+  .org-badges,
+  .centers-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .team-showcase__caption {
+    text-align: left;
+  }
+}

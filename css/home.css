@@ -1,0 +1,357 @@
+/* ===== HERO ===== */
+.hero {
+  margin-top: 36px;
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  gap: 40px;
+  align-items: center;
+}
+
+.hero-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.hero-title {
+  max-width: 520px;
+  font-size: clamp(2.235rem, 4.5vw, 3.412rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.oms-badge {
+  margin-top: 26px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 20px 8px 10px;
+  background-color: var(--green-100);
+  color: var(--green-700);
+  border-radius: var(--r-pill);
+  font-size: 0.941rem;
+  font-weight: 600;
+  line-height: 1.25;
+  box-shadow: 0 8px 22px rgba(29, 107, 54, 0.12);
+}
+
+.oms-badge__icon-wrap {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.oms-badge__gerb {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.hero-actions {
+  margin-top: 28px;
+}
+
+.hero-btn .icon--arrow-up-right {
+  width: 18px;
+  height: 18px;
+}
+
+.hero-media {
+  position: relative;
+  padding-left: 24px;
+  padding-bottom: 12px;
+}
+
+.hero-photo-wrap {
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  background-color: var(--teal-050);
+}
+
+.hero-photo {
+  width: 100%;
+  aspect-ratio: 1.15 / 1;
+  object-fit: cover;
+}
+
+.hours-card {
+  position: absolute;
+  left: 0;
+  bottom: 34px;
+  width: 300px;
+  max-width: 100%;
+  padding: 18px 22px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: var(--shadow-md);
+}
+
+.hours-card__label {
+  font-size: 0.882rem;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.hours-card__days {
+  font-size: 1.118rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+.hours-card__time {
+  font-size: 1.118rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+
+/* ===== LEADERSHIP ===== */
+.leadership {
+  margin-top: 32px;
+  padding: 34px 36px;
+}
+
+.leadership .section-title {
+  margin-bottom: 22px;
+}
+
+.staff-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.45fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.staff-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.staff-card__media {
+  border-radius: 18px;
+  overflow: hidden;
+  background-color: var(--teal-050);
+}
+
+.staff-card__img {
+  width: 100%;
+  aspect-ratio: 7 / 8;
+  object-fit: cover;
+  object-position: center top;
+}
+
+.staff-card__img--team {
+  aspect-ratio: 4 / 3;
+  object-position: center center;
+}
+
+.staff-card__caption {
+  margin-top: 12px;
+}
+
+.staff-card__role {
+  font-size: 0.853rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.staff-card__name {
+  margin-top: 2px;
+  font-size: 1.059rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ink);
+}
+
+.staff-card__team-label {
+  font-size: 0.941rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+/* ===== DOCUMENTS & CONTACTS ROW ===== */
+.home-bottom-grid {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: 24px;
+  align-items: stretch;
+}
+
+.docs-card,
+.contacts-card {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+}
+
+.docs-card .section-title,
+.contacts-card .section-title {
+  margin-bottom: 20px;
+}
+
+.docs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.doc-btn {
+  width: 100%;
+  min-height: 56px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: var(--r-sm);
+  background-color: #e4eaf1;
+  color: var(--ink);
+  font-size: 0.971rem;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.doc-btn:hover {
+  background-color: #d8e1ea;
+}
+
+.doc-btn .icon--pdf {
+  width: 22px;
+  height: 22px;
+  color: var(--teal-700);
+}
+
+.map-preview {
+  display: block;
+  border-radius: 18px;
+  overflow: hidden;
+  flex: 1;
+  background-color: var(--teal-050);
+}
+
+.map-preview__img {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 2.85 / 1;
+  object-fit: cover;
+  transition: transform 0.25s ease;
+}
+
+.map-preview:hover .map-preview__img {
+  transform: scale(1.02);
+}
+
+/* ===== VISUALLY IMPAIRED MODE OVERRIDES (HOME) ===== */
+html.a11y-mode .oms-badge,
+html.a11y-mode .status,
+html.a11y-mode .status.is-closed,
+html.a11y-mode .doc-btn,
+html.a11y-mode .hours-card {
+  background: #ffffff;
+  color: #000000;
+  border: 2px solid #000000;
+  box-shadow: none;
+}
+
+html.a11y-mode .status__dot,
+html.a11y-mode .status.is-closed .status__dot {
+  background-color: #000000;
+}
+
+html.a11y-mode .hero-photo-wrap,
+html.a11y-mode .staff-card__media,
+html.a11y-mode .map-preview {
+  border: 2px solid #000000;
+  box-shadow: none;
+}
+
+/* ===== RESPONSIVE: HOME ===== */
+@media (max-width: 1200px) {
+  .hero {
+    gap: 32px;
+  }
+}
+
+@media (max-width: 980px) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .hero-title {
+    max-width: 100%;
+  }
+
+  .hero-media {
+    padding-left: 16px;
+  }
+
+  .staff-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .staff-card__img--team {
+    aspect-ratio: 7 / 8;
+  }
+
+  .home-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .hero {
+    margin-top: 24px;
+  }
+
+  .hero-title {
+    font-size: 2.176rem;
+  }
+
+  .hero-actions {
+    width: 100%;
+  }
+
+  .hero-btn {
+    width: 100%;
+  }
+
+  .hero-media {
+    padding-left: 0;
+    padding-bottom: 0;
+  }
+
+  .hours-card {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    width: 100%;
+    margin-top: -16px;
+    background: var(--card-strong);
+  }
+
+  .leadership,
+  .docs-card,
+  .contacts-card {
+    padding: 22px 20px;
+  }
+
+  .staff-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .staff-card__img--team {
+    aspect-ratio: 4 / 3;
+  }
+}
