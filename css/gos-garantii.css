@@ -1,0 +1,262 @@
+/* css/gos-garantii.css — страница «Программа гос. гарантий» */
+
+/* 4.1 Вступление */
+.gos-intro__text {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+/* 4.2 Республика Марий Эл */
+.gos-main-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.gos-main-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.gos-emblem {
+  height: 56px;
+  width: auto;
+  object-fit: contain;
+  flex: none;
+}
+
+.gos-main-head__titles {
+  min-width: 0;
+}
+
+.gos-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--ink);
+}
+
+.gos-subtitle {
+  margin: 2px 0 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.gos-bookmark {
+  margin-left: auto;
+  flex: none;
+  color: var(--teal-700);
+}
+
+.gos-text {
+  margin: 0 0 20px;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+/* Светлая кнопка страницы (во всю ширину) */
+.btn-pale,
+.gos-btn {
+  width: 100%;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--teal-100);
+  color: var(--ink);
+  border-radius: 12px;
+  text-decoration: none;
+}
+
+.btn-pale:hover,
+.gos-btn:hover {
+  background: var(--teal-050);
+}
+
+.gos-main-card .gos-btn,
+.gos-subcard .gos-btn,
+.zhnvlp-card .gos-btn {
+  margin-top: auto;
+}
+
+.gos-btn__icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+/* 4.3 Две карточки в ряд */
+.gos-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+.gos-subcard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* 4.4 Перечень ЖНВЛП */
+.zhnvlp-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.zhnvlp-card__subtitle {
+  margin: 0 0 20px;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+/* 4.5 Федеральные законы (РФ) */
+.laws-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.law-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.law-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 14px 12px;
+  border-bottom: 1px solid rgba(15, 118, 132, 0.12);
+  border-radius: var(--r-xs);
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+.law-row:last-child {
+  border-bottom: none;
+}
+
+.law-row:hover {
+  background: var(--teal-050);
+}
+
+.law-row:focus-visible {
+  outline: 2px solid var(--teal-700);
+  outline-offset: 2px;
+}
+
+.law-row__text {
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+.law-row__icon {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--teal-700);
+}
+
+/* Адаптивность */
+@media (max-width: 1100px) {
+  .gos-intro,
+  .gos-main-card,
+  .gos-subcard,
+  .zhnvlp-card,
+  .laws-card {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 980px) {
+  .gos-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .gos-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .gos-intro,
+  .gos-main-card,
+  .gos-subcard,
+  .zhnvlp-card,
+  .laws-card {
+    padding: 22px;
+  }
+
+  .gos-main-head {
+    flex-wrap: wrap;
+  }
+
+  .gos-title {
+    font-size: 1.3rem;
+  }
+
+  .btn-pale,
+  .gos-btn {
+    width: 100%;
+  }
+
+  .law-row {
+    padding: 12px 10px;
+  }
+}
+
+/* Режим высокой контрастности / доступности */
+html.a11y-mode .gos-intro,
+html.a11y-mode .gos-main-card,
+html.a11y-mode .gos-subcard,
+html.a11y-mode .zhnvlp-card,
+html.a11y-mode .laws-card {
+  background: #fff;
+  border: 2px solid #000;
+  box-shadow: none;
+}
+
+html.a11y-mode .gos-emblem {
+  border: 2px solid #000;
+}
+
+html.a11y-mode .btn-pale,
+html.a11y-mode .gos-btn {
+  background: #fff;
+  border: 2px solid #000;
+  color: #000;
+}
+
+html.a11y-mode .gos-intro__text,
+html.a11y-mode .gos-text,
+html.a11y-mode .gos-subtitle,
+html.a11y-mode .zhnvlp-card__subtitle,
+html.a11y-mode .law-row__text,
+html.a11y-mode .gos-title {
+  color: #000;
+}
+
+html.a11y-mode .gos-bookmark,
+html.a11y-mode .gos-btn__icon,
+html.a11y-mode .law-row__icon {
+  color: #000;
+}
+
+html.a11y-mode .law-row {
+  border-bottom-color: #000;
+}
+
+html.a11y-mode .law-row:hover {
+  background: #fff;
+}
