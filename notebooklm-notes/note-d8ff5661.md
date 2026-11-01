@@ -3,7 +3,7 @@ notebook: "Сайты Диалам +"
 notebook_id: "6005e131-6283-41cb-ac2f-39fa3832f702"
 note_id: "d8ff5661-3787-4311-ad21-c2676452310c"
 title: "Правила распределения задач между Gemini, DeepSeek и Qwen"
-exported_at: "2026-11-01T07:53:02.336186+00:00"
+exported_at: "2026-11-01T08:13:45.409572+00:00"
 source: NotebookLM
 ---
 
