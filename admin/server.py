@@ -19,6 +19,7 @@ import secrets
 import sqlite3
 import sys
 import threading
+import time
 from datetime import datetime, timezone
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -55,9 +56,9 @@ SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9\-]{0,63}$")
 # ---------------------------------------------------------------------------
 # Сессии (в памяти прототипа)
 # ---------------------------------------------------------------------------
-SESSIONS = {}          # token -> {"expires": float}
+SESSIONS = {}          # token -> expires (unix timestamp)
 SESSIONS_LOCK = threading.Lock()
-SESSION_TTL = 12 * 3600
+SESSION_TTL = 72 * 3600  # 72 часа
 
 
 def now_iso():
@@ -71,7 +72,7 @@ def get_password():
 def create_session():
     token = secrets.token_hex(32)
     with SESSIONS_LOCK:
-        SESSIONS[token] = True
+        SESSIONS[token] = time.time() + SESSION_TTL
     return token
 
 
@@ -79,7 +80,13 @@ def check_session(token):
     if not token:
         return False
     with SESSIONS_LOCK:
-        return token in SESSIONS
+        expires = SESSIONS.get(token)
+        if not expires:
+            return False
+        if expires < time.time():
+            SESSIONS.pop(token, None)
+            return False
+        return True
 
 
 def destroy_session(token):
