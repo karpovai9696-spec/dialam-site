@@ -35,9 +35,10 @@ PROTECTED_DIRS = ("/data/", "/exports/", "/static/../")
 ITEM_TYPES = {
     "branch":   ["city", "address", "phone", "email", "hours", "map_url", "is_active"],
     "license":  ["number", "issued_by", "issued_at", "file_url", "note"],
-    "news":     ["title", "date", "excerpt", "body", "image_url", "published"],
+    "news":     ["title", "date", "excerpt", "body", "image_url", "published",
+                 "branch"],
     "vacancy":  ["title", "city", "employment", "salary", "description",
-                 "requirements", "contact_email", "published"],
+                 "requirements", "contact_email", "published", "branch"],
     "staff":    ["name", "role", "branch", "phone", "email", "education",
                  "accreditation", "photo"],
     "service":  ["name", "category", "description", "price", "is_active"],
@@ -200,7 +201,7 @@ def seed(conn):
         "excerpt": "Демонстрационная запись seed — замените реальной новостью через админ-панель.",
         "body": "Это демо-новость из начальных данных. Замените её реальным текстом "
                 "в разделе «Новости» админ-панели.",
-        "image_url": "", "published": False,
+        "image_url": "", "published": False, "branch": "Волжск",
     }, 1)
     new_item(dialam, "news", {
         "title": "Демо-новость: замените в панели",
@@ -208,7 +209,7 @@ def seed(conn):
         "excerpt": "Вторая демонстрационная запись seed — замените реальной новостью.",
         "body": "Это вторая демо-новость из начальных данных. Замените её реальным "
                 "текстом в разделе «Новости» админ-панели.",
-        "image_url": "", "published": False,
+        "image_url": "", "published": False, "branch": "Нижневартовск",
     }, 2)
 
     new_item(dialam, "vacancy", {
@@ -220,7 +221,7 @@ def seed(conn):
                        "на аппарате «искусственная почка».",
         "requirements": "Высшее медицинское образование, аккредитация по "
                         "нефрологии/терапии.",
-        "contact_email": "dialam@list.ru", "published": True,
+        "contact_email": "dialam@list.ru", "published": True, "branch": "Орёл",
     }, 1)
     new_item(dialam, "vacancy", {
         "title": "Инженер по медицинскому оборудованию",
@@ -231,7 +232,7 @@ def seed(conn):
                        "и ведение технической документации.",
         "requirements": "Профильное техническое образование, опыт обслуживания "
                         "медицинского оборудования приветствуется.",
-        "contact_email": "dialam@list.ru", "published": True,
+        "contact_email": "dialam@list.ru", "published": True, "branch": "Нижневартовск",
     }, 2)
 
     staff = [

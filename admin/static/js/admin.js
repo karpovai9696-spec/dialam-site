@@ -53,7 +53,12 @@ const state = {
   sites: [],          // список сайтов (с counts)
   siteId: null,       // текущий сайт
   view: 'overview',   // текущий раздел
+  branches: [],       // филиалы текущего сайта (названия городов)
+  branchFilter: '',   // выбранный филиал в списках ('' — все филиалы)
 };
+
+/* Разделы, которые для dialam группируются/фильтруются по филиалам */
+const BRANCH_GROUPED_TYPES = ['staff', 'vacancy', 'news'];
 
 const VIEWS = {
   overview: { title: 'Обзор' },
@@ -82,19 +87,21 @@ const SCHEMAS = {
     ['note', 'Примечание', 'textarea'],
   ],
   news: [
-    ['title', 'Заголовок', 'text'], ['date', 'Дата', 'date'],
+    ['title', 'Заголовок', 'text'], ['branch', 'Филиал', 'select-branch'],
+    ['date', 'Дата', 'date'],
     ['excerpt', 'Краткое описание', 'textarea'], ['body', 'Текст новости', 'textarea'],
     ['image_url', 'URL изображения', 'text'], ['published', 'Опубликовано', 'bool'],
   ],
   vacancy: [
-    ['title', 'Должность', 'text'], ['city', 'Город', 'text'],
+    ['title', 'Должность', 'text'], ['branch', 'Филиал', 'select-branch'],
+    ['city', 'Город', 'text'],
     ['employment', 'Занятость', 'text'], ['salary', 'Зарплата', 'text'],
     ['description', 'Обязанности', 'textarea'], ['requirements', 'Требования', 'textarea'],
     ['contact_email', 'Контактный e-mail', 'text'], ['published', 'Опубликовано', 'bool'],
   ],
   staff: [
     ['name', 'ФИО', 'text'], ['role', 'Должность', 'text'],
-    ['branch', 'Филиал', 'text'], ['phone', 'Телефон', 'text'],
+    ['branch', 'Филиал', 'select-branch'], ['phone', 'Телефон', 'text'],
     ['email', 'E-mail', 'text'], ['education', 'Образование', 'textarea'],
     ['accreditation', 'Аккредитация', 'text'], ['photo', 'URL фото', 'text'],
   ],
@@ -116,8 +123,8 @@ const SCHEMAS = {
 const LIST_COLUMNS = {
   branch: i => [['Город', i.city], ['Адрес', i.address], ['Телефон', i.phone], ['Часы', i.hours], ['Статус', boolBadge(i.is_active)]],
   license: i => [['Номер', i.number], ['Кем выдана', i.issued_by], ['Дата', i.issued_at], ['Файл', i.file_url]],
-  news: i => [['Заголовок', i.title], ['Дата', i.date], ['Отрывок', i.excerpt], ['Публикация', boolBadge(i.published)]],
-  vacancy: i => [['Должность', i.title], ['Город', i.city], ['Занятость', i.employment], ['Зарплата', i.salary], ['Публикация', boolBadge(i.published)]],
+  news: i => [['Заголовок', i.title], ['Филиал', i.branch], ['Дата', i.date], ['Отрывок', i.excerpt], ['Публикация', boolBadge(i.published)]],
+  vacancy: i => [['Должность', i.title], ['Филиал', i.branch || i.city], ['Занятость', i.employment], ['Зарплата', i.salary], ['Публикация', boolBadge(i.published)]],
   staff: i => [['ФИО', i.name], ['Должность', i.role], ['Филиал', i.branch], ['E-mail', i.email]],
   service: i => [['Название', i.name], ['Категория', i.category], ['Цена', i.price], ['Статус', boolBadge(i.is_active)]],
   document: i => [['Название', i.title], ['Категория', i.category], ['Ссылка', i.file_url], ['Публикация', boolBadge(i.published)]],
@@ -130,6 +137,35 @@ function boolBadge(v) {
 
 function currentSite() {
   return state.sites.find(s => s.id === state.siteId) || null;
+}
+
+/* Группировка по филиалам включается только для бренда «Диалам+» (slug=dialam) */
+function isDialam() {
+  const site = currentSite();
+  return !!site && site.slug === 'dialam';
+}
+
+function branchGroupingEnabled(type) {
+  return isDialam() && BRANCH_GROUPED_TYPES.indexOf(type) !== -1;
+}
+
+function itemBranch(it) {
+  const d = it.data || {};
+  return String(d.branch || d.city || '').trim();
+}
+
+/* Филиалы текущего сайта: API /api/sites/<id>/items?type=branch */
+async function loadBranches(siteId) {
+  if (!siteId) { state.branches = []; return; }
+  try {
+    const data = await api(`/api/sites/${siteId}/items?type=branch`);
+    const names = (data.items || [])
+      .map(it => String((it.data && it.data.city) || '').trim())
+      .filter(Boolean);
+    state.branches = Array.from(new Set(names));
+  } catch (e) {
+    state.branches = [];
+  }
 }
 
 /* ============================== ВХОД / ВЫХОД ============================== */
@@ -156,6 +192,7 @@ async function enterApp() {
   $('#login-screen').classList.add('hidden');
   $('#app').classList.remove('hidden');
   await loadSites();
+  await loadBranches(state.siteId);
   renderView();
 }
 
@@ -235,31 +272,84 @@ async function renderItemsList(content, meta) {
   const site = currentSite();
   if (!site) { content.innerHTML = '<div class="empty-hint">Нет сайтов.</div>'; return; }
   const type = meta.type;
+  const grouping = branchGroupingEnabled(type);
+  if (isDialam()) await loadBranches(site.id);
   const data = await api(`/api/sites/${site.id}/items?type=${type}`);
-  const items = data.items;
+  let items = data.items;
 
-  let rowsHtml = '';
-  if (!items.length) {
-    rowsHtml = `<tr><td colspan="6"><div class="empty-hint">Пока пусто. Нажмите «Добавить».</div></td></tr>`;
-  } else {
-    const cols = LIST_COLUMNS[type];
-    rowsHtml = items.map(it => {
-      const cells = cols(it.data).map(([h, v]) => `<td>${v && String(v).startsWith('<span') ? v : esc(v)}</td>`).join('');
-      return `<tr><td>#${it.id}</td>${cells}
-        <td class="row-actions">
-          <button class="btn btn-ghost btn-sm" data-edit="${it.id}">Изменить</button>
-          <button class="btn btn-danger-ghost btn-sm" data-del="${it.id}">Удалить</button>
-        </td></tr>`;
-    }).join('');
+  /* Фильтр по филиалу (для dialam: Сотрудники / Вакансии / Новости) */
+  if (grouping && state.branchFilter) {
+    items = items.filter(it => itemBranch(it) === state.branchFilter);
   }
-  const heads = ['#', ...LIST_COLUMNS[type]({}).map(h => h[0]), ''].map(h => `<th>${esc(h)}</th>`).join('');
+
+  /* Панель фильтра по филиалам */
+  let filterHtml = '';
+  if (grouping) {
+    const chips = ['', ...state.branches].map(b =>
+      `<button class="btn btn-sm ${b === state.branchFilter ? 'btn-primary' : 'btn-ghost'}"
+         data-branch-filter="${esc(b)}">${b ? esc(b) : 'Все филиалы'}</button>`).join('');
+    filterHtml = `<div class="branch-filter glass"><span class="branch-filter-label">Филиал:</span>${chips}</div>`;
+  }
+
+  /* Колонки: при группировке колонку «Филиал» убираем — она вынесена в заголовок группы */
+  let colsFn = LIST_COLUMNS[type];
+  let dropIdx = -1;
+  if (grouping) {
+    const probe = colsFn({});
+    dropIdx = probe.findIndex(h => h[0] === 'Филиал');
+    if (dropIdx >= 0) {
+      colsFn = (i) => colsFn(i).filter((_, idx) => idx !== dropIdx);
+    }
+  }
+
+  const rowHtml = (it) => {
+    const cells = colsFn(it.data).map(([h, v]) => `<td>${v && String(v).startsWith('<span') ? v : esc(v)}</td>`).join('');
+    return `<tr><td>#${it.id}</td>${cells}
+      <td class="row-actions">
+        <button class="btn btn-ghost btn-sm" data-edit="${it.id}">Изменить</button>
+        <button class="btn btn-danger-ghost btn-sm" data-del="${it.id}">Удалить</button>
+      </td></tr>`;
+  };
+
+  const heads = ['#', ...colsFn({}).map(h => h[0]), ''].map(h => `<th>${esc(h)}</th>`).join('');
+
+  let bodyHtml = '';
+  if (!items.length) {
+    const span = 2 + colsFn({}).length;
+    bodyHtml = `<tr><td colspan="${span}"><div class="empty-hint">Пока пусто. Нажмите «Добавить».</div></td></tr>`;
+  } else if (grouping) {
+    /* Группировка по филиалу: заголовок-город, под ним записи */
+    const groups = new Map();
+    items.forEach(it => {
+      const b = itemBranch(it) || 'Без филиала';
+      if (!groups.has(b)) groups.set(b, []);
+      groups.get(b).push(it);
+    });
+    const ordered = [...groups.keys()].sort((a, b) => {
+      const ia = state.branches.indexOf(a), ib = state.branches.indexOf(b);
+      return (ia < 0 ? 1e9 : ia) - (ib < 0 ? 1e9 : ib);
+    });
+    bodyHtml = ordered.map(city =>
+      `<tr class="branch-group-head"><td colspan="${2 + colsFn({}).length}">${esc(city)} · ${groups.get(city).length}</td></tr>` +
+      groups.get(city).map(rowHtml).join('')
+    ).join('');
+  } else {
+    bodyHtml = items.map(rowHtml).join('');
+  }
 
   content.innerHTML = `
     <div class="page-head">
       <h2>${esc(meta.title)} · ${esc(site.name)}</h2>
       <button class="btn btn-primary" id="btn-add">+ Добавить</button>
     </div>
-    <div class="table-wrap glass"><table class="list"><thead><tr>${heads}</tr></thead><tbody>${rowsHtml}</tbody></table></div>`;
+    ${filterHtml}
+    <div class="table-wrap glass"><table class="list"><thead><tr>${heads}</tr></thead><tbody>${bodyHtml}</tbody></table></div>`;
+
+  $$('[data-branch-filter]', content).forEach(b =>
+    b.addEventListener('click', () => {
+      state.branchFilter = b.dataset.branchFilter;
+      renderView();
+    }));
 
   $('#btn-add').addEventListener('click', () => openItemModal(type, null));
   $$('[data-edit]', content).forEach(b =>
@@ -297,6 +387,21 @@ function fieldHtml(name, label, kind, value) {
   if (kind === 'bool') {
     return `<label class="field-check full"><input type="checkbox" name="${esc(name)}" ${v ? 'checked' : ''}> ${esc(label)}</label>`;
   }
+  if (kind === 'select-branch') {
+    /* Для dialam — обязательный select с филиалами сайта.
+       Для остальных брендов поле остаётся обычным (необязательным). */
+    if (isDialam()) {
+      const opts = ['<option value="">— выберите филиал —</option>']
+        .concat(state.branches.map(b =>
+          `<option value="${esc(b)}"${String(v) === b ? ' selected' : ''}>${esc(b)}</option>`));
+      /* Если значение не из списка (например, свободный текст) — добавляем его */
+      if (v && state.branches.indexOf(String(v)) === -1) {
+        opts.push(`<option value="${esc(v)}" selected>${esc(v)} (вне списка)</option>`);
+      }
+      return `<label class="field"><span>${esc(label)} *</span><select class="input select" name="${esc(name)}" required>${opts.join('')}</select></label>`;
+    }
+    kind = 'text';
+  }
   const cls = (kind === 'textarea') ? 'full' : '';
   const input = kind === 'textarea'
     ? `<textarea class="input" name="${esc(name)}">${esc(v)}</textarea>`
@@ -306,7 +411,7 @@ function fieldHtml(name, label, kind, value) {
 
 function readForm(container) {
   const out = {};
-  $$('input[name], textarea[name]', container).forEach(el => {
+  $$('input[name], textarea[name], select[name]', container).forEach(el => {
     out[el.name] = el.type === 'checkbox' ? el.checked : el.value;
   });
   return out;
@@ -325,8 +430,16 @@ function openItemModal(type, item) {
   const site = currentSite();
   const schema = SCHEMAS[type];
   const data = Object.assign({}, item ? item.data : {}, { __sort_order: item ? item.sort_order : 0 });
+  /* Для новой записи в dialam подставляем текущий выбранный филиал */
+  if (!item && isDialam() && state.branchFilter && BRANCH_GROUPED_TYPES.indexOf(type) !== -1) {
+    data.branch = state.branchFilter;
+  }
   openModal((item ? 'Изменить: ' : 'Добавить: ') + VIEWS[type].title, buildItemForm(schema, data), async (bodyEl) => {
     const form = readForm(bodyEl);
+    if (isDialam() && BRANCH_GROUPED_TYPES.indexOf(type) !== -1 && !String(form.branch || '').trim()) {
+      showModalError('Выберите филиал — это поле обязательно.');
+      return;
+    }
     const order = parseInt(form.__sort_order || '0', 10) || 0;
     delete form.__sort_order;
     const payload = { type, data: form, sort_order: order };
@@ -407,9 +520,11 @@ async function renderSites(content, meta) {
     });
   });
 
-  $$('[data-switch]', content).forEach(b => b.addEventListener('click', () => {
+  $$('[data-switch]', content).forEach(b => b.addEventListener('click', async () => {
     state.siteId = parseInt(b.dataset.switch, 10);
     $('#site-switcher').value = state.siteId;
+    state.branchFilter = '';
+    await loadBranches(state.siteId);
     setView('overview');
   }));
   $$('[data-edit-site]', content).forEach(b => b.addEventListener('click', () => {
@@ -555,8 +670,10 @@ function init() {
     if (b) setView(b.dataset.view);
   });
 
-  $('#site-switcher').addEventListener('change', (ev) => {
+  $('#site-switcher').addEventListener('change', async (ev) => {
     state.siteId = parseInt(ev.target.value, 10);
+    state.branchFilter = '';
+    await loadBranches(state.siteId);
     renderView();
   });
 
