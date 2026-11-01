@@ -241,6 +241,26 @@ CREATE TABLE IF NOT EXISTS items (
 CREATE INDEX IF NOT EXISTS idx_items_site_type ON items(site_id, type);
 """
 
+# Версионируемые миграции SQLite. Версия хранится в PRAGMA user_version.
+MIGRATIONS = {
+    1: [
+        "CREATE INDEX IF NOT EXISTS idx_items_site_sort ON items(site_id, sort_order, id);",
+        "CREATE INDEX IF NOT EXISTS idx_items_updated ON items(updated_at);",
+    ],
+}
+
+
+def run_migrations(conn):
+    current = conn.execute("PRAGMA user_version").fetchone()[0]
+    for version in sorted(MIGRATIONS):
+        if current >= version:
+            continue
+        for statement in MIGRATIONS[version]:
+            conn.execute(statement)
+        conn.execute("PRAGMA user_version = %d" % version)
+        conn.commit()
+        current = version
+
 
 def seed(conn):
     ts = now_iso()
@@ -444,6 +464,7 @@ def init_db():
     os.makedirs(EXPORTS_DIR, exist_ok=True)
     conn = db()
     conn.executescript(SCHEMA)
+    run_migrations(conn)
     n = conn.execute("SELECT COUNT(*) AS c FROM sites").fetchone()["c"]
     if n == 0:
         seed(conn)
