@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Админ-панель — Диалам+ и бренды</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body>
+
+<!-- ===== ЭКРАН ВХОДА ===== -->
+<section id="login-screen" class="login-screen hidden">
+  <div class="login-card glass">
+    <div class="login-logo">◍</div>
+    <h1>Админ-панель</h1>
+    <p class="muted">Единая панель управления контентом сайтов: Диалам+, Консалтинг, Диамедика, Салюшенс.</p>
+    <form id="login-form" autocomplete="off">
+      <label class="field">
+        <span>Пароль администратора</span>
+        <input type="password" name="password" id="login-password" placeholder="••••••••" required>
+      </label>
+      <button type="submit" class="btn btn-primary btn-block" id="login-btn">Войти</button>
+      <div id="login-error" class="form-error hidden"></div>
+    </form>
+    <p class="login-note muted">Прототип. Данные сессии хранятся в памяти сервера.</p>
+  </div>
+</section>
+
+<!-- ===== ПРИЛОЖЕНИЕ ===== -->
+<div id="app" class="app hidden">
+  <header class="topbar glass">
+    <div class="topbar-brand">
+      <span class="brand-dot">◍</span>
+      <span class="brand-name">Dialam&nbsp;Admin</span>
+      <span class="brand-sub">4 бренда · единая панель</span>
+    </div>
+    <div class="topbar-right">
+      <select id="site-switcher" class="select" title="Переключить сайт"></select>
+      <button class="btn btn-ghost" id="btn-export" title="Экспорт JSON текущего сайта">Экспорт JSON</button>
+      <button class="btn btn-ghost" id="btn-site-settings" title="Настройки сайта">Настройки сайта</button>
+      <button class="btn btn-danger-ghost" id="btn-logout">Выйти</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="sidebar glass" id="sidebar">
+      <button class="nav-item active" data-view="overview">Обзор</button>
+      <button class="nav-item" data-view="sites">Сайты</button>
+      <button class="nav-item" data-view="branch">Филиалы</button>
+      <button class="nav-item" data-view="license">Лицензии</button>
+      <button class="nav-item" data-view="news">Новости</button>
+      <button class="nav-item" data-view="vacancy">Вакансии</button>
+      <button class="nav-item" data-view="staff">Сотрудники</button>
+      <button class="nav-item" data-view="service">Услуги</button>
+      <button class="nav-item" data-view="document">Документы</button>
+      <button class="nav-item" data-view="settings">Настройки</button>
+    </nav>
+
+    <main class="content" id="content">
+      <div class="loading">Загрузка…</div>
+    </main>
+  </div>
+</div>
+
+<!-- ===== МОДАЛЬНОЕ ОКНО ===== -->
+<div id="modal-backdrop" class="modal-backdrop hidden">
+  <div class="modal glass" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <h2 id="modal-title">Форма</h2>
+      <button class="modal-close" id="modal-close" aria-label="Закрыть">×</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-foot">
+      <div id="modal-error" class="form-error hidden"></div>
+      <button class="btn btn-ghost" id="modal-cancel">Отмена</button>
+      <button class="btn btn-primary" id="modal-save">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container" class="toast-container"></div>
+
+<script src="/static/js/admin.js"></script>
+</body>
+</html>

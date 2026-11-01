@@ -1,0 +1,5 @@
+# Локальные данные админ-панели (не коммитить)
+data/*.db
+data/*.db-journal
+exports/*.json
+__pycache__/
