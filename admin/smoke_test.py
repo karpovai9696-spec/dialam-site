@@ -84,10 +84,61 @@ def main():
                                    "sort_order": 0},
                                   {"X-CSRF-Token": csrf})
         assert status == 201, (status, body)
-        item_id = json.loads(body)["id"]
-        status, _, _ = request(opener, base, f"/api/items/{item_id}", "DELETE",
-                               headers={"X-CSRF-Token": csrf})
-        assert status == 200, status
+        created = json.loads(body)
+        item_id = created["id"]
+        assert created["version"] == 1, created
+
+        # Версионирование: без expected_version — 428, со старой — 409.
+        status, body, _ = request(opener, base, f"/api/items/{item_id}", "PUT",
+                                  {"data": {"title": "ci-test-2", "published": False}},
+                                  {"X-CSRF-Token": csrf})
+        assert status == 428, (status, body)
+        status, body, _ = request(opener, base, f"/api/items/{item_id}", "PUT",
+                                  {"data": {"title": "ci-test-2", "published": False},
+                                   "expected_version": 999},
+                                  {"X-CSRF-Token": csrf})
+        assert status == 409, (status, body)
+        conflict = json.loads(body)
+        assert conflict["error"] == "version_conflict"
+        assert conflict["current_version"] == 1
+        status, body, _ = request(opener, base, f"/api/items/{item_id}", "PUT",
+                                  {"data": {"title": "ci-test-2", "published": False},
+                                   "expected_version": 1},
+                                  {"X-CSRF-Token": csrf})
+        assert status == 200, (status, body)
+        updated = json.loads(body)
+        assert updated["version"] == 2, updated
+
+        # Удаление тоже требует актуальную версию.
+        status, body, _ = request(opener, base, f"/api/items/{item_id}", "DELETE",
+                                  headers={"X-CSRF-Token": csrf})
+        assert status == 428, (status, body)
+        status, body, _ = request(opener, base, f"/api/items/{item_id}?version=999", "DELETE",
+                                  headers={"X-CSRF-Token": csrf})
+        assert status == 409, (status, body)
+        status, body, _ = request(opener, base, f"/api/items/{item_id}?version=2", "DELETE",
+                                  headers={"X-CSRF-Token": csrf})
+        assert status == 200, (status, body)
+
+        # Контракт /api/overview: алерты, топ-5, контент, филиалы, действия.
+        status, body, _ = request(opener, base, "/api/overview?site_id=1")
+        assert status == 200, (status, body)
+        overview = json.loads(body)
+        for key in ("attention", "content", "branches", "recent", "actions", "site_id"):
+            assert key in overview, key
+        assert overview["site_id"] == 1
+        assert overview["attention"]["total"] > 0
+        assert len(overview["attention"]["items"]) <= 5
+        assert len(overview["actions"]) == 3
+        status, body, _ = request(opener, base, "/api/overview?site_id=1&attention_limit=50")
+        assert status == 200, (status, body)
+        assert len(json.loads(body)["attention"]["items"]) <= 50
+
+        # Сайт тоже версионируется.
+        status, body, _ = request(opener, base, "/api/sites/1", "PUT",
+                                  {"name": "no-version"}, {"X-CSRF-Token": csrf})
+        assert status == 428, (status, body)
+
         print("admin smoke/security test: OK")
     finally:
         proc.terminate()

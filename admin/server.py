@@ -247,6 +247,11 @@ MIGRATIONS = {
         "CREATE INDEX IF NOT EXISTS idx_items_site_sort ON items(site_id, sort_order, id);",
         "CREATE INDEX IF NOT EXISTS idx_items_updated ON items(updated_at);",
     ],
+    2: [
+        # Оптимистичная блокировка для предотвращения потерянных обновлений.
+        "ALTER TABLE sites ADD COLUMN version INTEGER NOT NULL DEFAULT 1;",
+        "ALTER TABLE items ADD COLUMN version INTEGER NOT NULL DEFAULT 1;",
+    ],
 }
 
 
@@ -557,6 +562,320 @@ def clean_item_data(typ, data):
 
 
 # ---------------------------------------------------------------------------
+# Обзор: контракт /api/overview
+# ---------------------------------------------------------------------------
+
+SECTION_BY_TYPE = {
+    "branch": "branch", "license": "license", "news": "news",
+    "vacancy": "vacancy", "staff": "staff", "service": "service",
+    "document": "document", "setting": "settings",
+}
+FIELD_LABELS = {
+    "legal_name": "юр. лицо", "inn": "ИНН", "ogrn": "ОГРН",
+    "license_number": "номер лицензии", "license_issued_by": "кем выдана лицензия",
+    "license_date": "дата лицензии", "phone": "телефон", "email": "e-mail",
+    "address": "адрес", "hours": "часы работы", "number": "номер",
+    "issued_by": "кем выдана", "issued_at": "дата выдачи", "file_url": "файл",
+    "title": "заголовок", "branch": "филиал", "city": "город",
+    "name": "название", "role": "должность", "accreditation": "аккредитация",
+    "description": "описание", "price": "цена", "category": "категория",
+    "published": "публикация", "is_active": "активность",
+}
+PLACEHOLDER_VALUES = {"", "-", "—", "уточняется", "нет данных", "не указано"}
+SEVERITY_ORDER = {"critical": 0, "warning": 1, "info": 2}
+PUBLISHED_TYPES = {"news", "vacancy", "document"}
+ACTIVE_TYPES = {"branch", "service"}
+
+
+def _is_blank(value):
+    if value is None:
+        return True
+    return str(value).strip().lower() in PLACEHOLDER_VALUES
+
+
+def _missing_fields(data, fields):
+    return [FIELD_LABELS.get(f, f) for f in fields if _is_blank(data.get(f))]
+
+
+def _field_list(items):
+    return ", ".join(items)
+
+
+def _overview_alert(alerts, kind, severity, title, detail, site, section, item=None):
+    item_id = item["id"] if item else None
+    item_type = item["type"] if item else None
+    alerts.append({
+        "id": "%s:%s:%s" % (kind, site["id"], item_id if item_id else "site"),
+        "kind": kind,
+        "severity": severity,
+        "title": title,
+        "detail": detail,
+        "site_id": site["id"],
+        "site_slug": site["slug"],
+        "section": section,
+        "item_id": item_id,
+        "item_type": item_type,
+        "action": {
+            "kind": "edit_item" if item_id else "open_section",
+            "section": section,
+            "site_id": site["id"],
+            "item_id": item_id,
+            "item_type": item_type,
+        },
+    })
+
+
+def _site_published_state(item):
+    data = item.get("data") or {}
+    if item["type"] in PUBLISHED_TYPES:
+        return bool(data.get("published"))
+    if item["type"] in ACTIVE_TYPES:
+        return bool(data.get("is_active", True))
+    return None
+
+
+def _recent_events(site_id=None, limit=8):
+    if not os.path.exists(AUDIT_LOG):
+        return []
+    lines = []
+    try:
+        with open(AUDIT_LOG, encoding="utf-8") as f:
+            lines = f.readlines()[-250:]
+    except OSError:
+        return []
+    labels = {
+        "site_create": "Создан сайт", "site_update": "Обновлён сайт",
+        "site_delete": "Удалён сайт", "item_create": "Создана запись",
+        "item_update": "Обновлена запись", "item_delete": "Удалена запись",
+        "export_file": "Сохранён экспорт",
+    }
+    events = []
+    for line in reversed(lines):
+        try:
+            rec = json.loads(line)
+        except (ValueError, TypeError):
+            continue
+        event = rec.get("event")
+        if event not in labels:
+            continue
+        rec_site = rec.get("site_id")
+        if site_id is not None and rec_site is not None and rec_site != site_id:
+            continue
+        events.append({
+            "at": rec.get("ts"),
+            "event": event,
+            "label": labels.get(event, event),
+            "site_id": rec_site,
+            "item_id": rec.get("item_id"),
+            "type": rec.get("type"),
+        })
+        if len(events) >= limit:
+            break
+    return events
+
+
+def build_overview(conn, site_id=None, attention_limit=5):
+    """Собирает контракт главного экрана. Никаких тяжёлых агрегатов вне SQLite."""
+    site_rows = conn.execute("SELECT * FROM sites ORDER BY id").fetchall()
+    sites = [row_site(r) for r in site_rows]
+    if site_id is not None and not any(s["id"] == site_id for s in sites):
+        return None
+    items = [row_item(r) for r in conn.execute(
+        "SELECT * FROM items ORDER BY site_id, type, sort_order, id").fetchall()]
+    by_site = {s["id"]: [] for s in sites}
+    for it in items:
+        by_site.setdefault(it["site_id"], []).append(it)
+    site_by_id = {s["id"]: s for s in sites}
+
+    # Какие сайты попадают в «Требует внимания»/филиалы.
+    attention_site_ids = [site_id] if site_id is not None else list(site_by_id)
+    alerts = []
+
+    for sid in attention_site_ids:
+        site = site_by_id[sid]
+        site_items = by_site.get(sid, [])
+        by_type = {}
+        for it in site_items:
+            by_type.setdefault(it["type"], []).append(it)
+
+        # 1. Реквизиты сайта.
+        missing = _missing_fields(site, ["legal_name", "inn", "ogrn",
+                                        "license_number", "phone", "email", "address"])
+        if missing:
+            critical = any(f in missing for f in ("юр. лицо", "ИНН", "ОГРН", "номер лицензии"))
+            _overview_alert(
+                alerts, "site_legal", "critical" if critical else "warning",
+                "Реквизиты сайта заполнены не полностью",
+                "Не заполнено: " + _field_list(missing),
+                site, "settings")
+
+        # 2. Лицензии.
+        licenses = by_type.get("license", [])
+        if not licenses:
+            _overview_alert(
+                alerts, "license_missing", "critical",
+                "Не добавлена лицензия",
+                "В разделе «Лицензии» нет ни одной записи.",
+                site, "license")
+        for lic in licenses:
+            missing = _missing_fields(lic["data"], ["number", "issued_by", "issued_at", "file_url"])
+            if missing:
+                _overview_alert(
+                    alerts, "license_fields", "warning",
+                    "Лицензия заполнена не полностью",
+                    "Не заполнено: " + _field_list(missing),
+                    site, "license", lic)
+
+        # 3. Филиалы: контакты и часы.
+        for branch in by_type.get("branch", []):
+            data = branch["data"]
+            missing = _missing_fields(data, ["address", "phone", "hours"])
+            if missing:
+                city = (data.get("city") or "Без города").strip()
+                _overview_alert(
+                    alerts, "branch_contact", "warning",
+                    "Филиал «%s»: не хватает контактов" % city,
+                    "Не заполнено: " + _field_list(missing),
+                    site, "branch", branch)
+
+        # 4. Сотрудники.
+        for staff in by_type.get("staff", []):
+            data = staff["data"]
+            missing = _missing_fields(data, ["name", "role", "branch", "accreditation"])
+            if missing:
+                name = (data.get("name") or "Сотрудник").strip()
+                _overview_alert(
+                    alerts, "staff_fields", "warning",
+                    "Сотрудник «%s»: профиль неполный" % name,
+                    "Не заполнено: " + _field_list(missing),
+                    site, "staff", staff)
+
+        # 5. Новости: филиал и демо-контент.
+        for news in by_type.get("news", []):
+            data = news["data"]
+            title = (data.get("title") or "Без заголовка").strip()
+            if _is_blank(data.get("branch")):
+                _overview_alert(
+                    alerts, "news_branch", "warning",
+                    "Новость без филиала", title, site, "news", news)
+            if str(title).lower().startswith("демо-"):
+                _overview_alert(
+                    alerts, "news_demo", "warning",
+                    "Демо-новость в публичном контенте",
+                    "Замените «%s» реальной новостью." % title,
+                    site, "news", news)
+
+        # 6. Вакансии: филиал, контакт и демо-контент.
+        for vac in by_type.get("vacancy", []):
+            data = vac["data"]
+            title = (data.get("title") or "Без названия").strip()
+            missing = _missing_fields(data, ["branch", "contact_email"])
+            if missing:
+                _overview_alert(
+                    alerts, "vacancy_fields", "warning",
+                    "Вакансия «%s»: профиль неполный" % title,
+                    "Не заполнено: " + _field_list(missing),
+                    site, "vacancy", vac)
+            if str(title).lower().startswith("демо-"):
+                _overview_alert(
+                    alerts, "vacancy_demo", "warning",
+                    "Демо-вакансия в публичном контенте",
+                    "Замените «%s» реальной вакансией." % title,
+                    site, "vacancy", vac)
+
+        # 7. Документы и услуги.
+        for doc in by_type.get("document", []):
+            if _is_blank(doc["data"].get("file_url")):
+                _overview_alert(
+                    alerts, "document_file", "warning",
+                    "Документ без файла",
+                    (doc["data"].get("title") or "Документ"),
+                    site, "document", doc)
+        for svc in by_type.get("service", []):
+            missing = _missing_fields(svc["data"], ["description", "price"])
+            if missing:
+                _overview_alert(
+                    alerts, "service_fields", "warning",
+                    "Услуга заполнена не полностью",
+                    (svc["data"].get("name") or "Услуга") + ": " + _field_list(missing),
+                    site, "service", svc)
+
+    alerts.sort(key=lambda a: (SEVERITY_ORDER.get(a["severity"], 9), a["kind"], a["title"]))
+    attention_limit = max(1, min(50, int(attention_limit or 5)))
+    top_alerts = alerts[:attention_limit]
+    attention = {
+        "total": len(alerts),
+        "items": top_alerts,
+        "hidden_count": max(0, len(alerts) - len(top_alerts)),
+        "empty": len(alerts) == 0,
+    }
+
+    # Пульс контента по всем брендам.
+    content = []
+    for site in sites:
+        site_items = by_site.get(site["id"], [])
+        counts = {}
+        published = {}
+        for it in site_items:
+            counts[it["type"]] = counts.get(it["type"], 0) + 1
+            state = _site_published_state(it)
+            if state is True:
+                published[it["type"]] = published.get(it["type"], 0) + 1
+        content.append({
+            "site_id": site["id"],
+            "slug": site["slug"],
+            "name": site["name"],
+            "counts": counts,
+            "published": published,
+            "total": sum(counts.values()),
+            "published_total": sum(published.values()),
+        })
+
+    # Покрытие филиалов выбранного бренда.
+    branches = []
+    if site_id is not None:
+        selected_items = by_site.get(site_id, [])
+        by_type = {}
+        for it in selected_items:
+            by_type.setdefault(it["type"], []).append(it)
+        for branch in by_type.get("branch", []):
+            city = (branch["data"].get("city") or "Без города").strip()
+            staff_count = sum(1 for it in by_type.get("staff", [])
+                              if str(it["data"].get("branch") or "").strip() == city)
+            vacancy_count = sum(1 for it in by_type.get("vacancy", [])
+                                if str(it["data"].get("branch") or it["data"].get("city") or "").strip() == city)
+            news_count = sum(1 for it in by_type.get("news", [])
+                             if str(it["data"].get("branch") or "").strip() == city)
+            branches.append({
+                "city": city,
+                "item_id": branch["id"],
+                "staff": staff_count,
+                "vacancies": vacancy_count,
+                "news": news_count,
+                "gaps": _missing_fields(branch["data"], ["address", "phone", "hours"]),
+            })
+
+    actions = [
+        {"id": "create_news", "label": "+ Новость", "kind": "create_item", "type": "news",
+         "site_id": site_id, "section": "news"},
+        {"id": "create_vacancy", "label": "+ Вакансия", "kind": "create_item", "type": "vacancy",
+         "site_id": site_id, "section": "vacancy"},
+        {"id": "review_publications", "label": "Проверить публикации", "kind": "open_section",
+         "section": "news", "site_id": site_id},
+    ]
+
+    return {
+        "generated_at": now_iso(),
+        "site_id": site_id,
+        "attention": attention,
+        "content": content,
+        "branches": branches,
+        "recent": _recent_events(site_id),
+        "actions": actions,
+    }
+
+
+# ---------------------------------------------------------------------------
 # HTTP-обработчик
 # ---------------------------------------------------------------------------
 
@@ -590,7 +909,7 @@ class Handler(BaseHTTPRequestHandler):
         if cors:
             self.send_header("Access-Control-Allow-Origin", "*")
             self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
-            self.send_header("Access-Control-Allow-Headers", "Content-Type")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type, If-Match")
         self.end_headers()
         self.wfile.write(body)
 
@@ -652,6 +971,45 @@ class Handler(BaseHTTPRequestHandler):
         self.error(401, "Требуется вход в систему")
         return False
 
+    def expected_version(self, body=None, qs=None):
+        """Версия из expected_version, If-Match или ?version=. None — не передана."""
+        raw = None
+        if isinstance(body, dict) and "expected_version" in body:
+            raw = body.get("expected_version")
+        if raw is None:
+            match = re.search(r"\d+", self.headers.get("If-Match") or "")
+            if match:
+                raw = match.group(0)
+        if raw is None and qs:
+            raw = (qs.get("version") or [None])[0]
+        if raw is None or raw == "":
+            return None
+        try:
+            return int(raw)
+        except (TypeError, ValueError):
+            return -1
+
+    def require_version(self, old, expected, current_payload):
+        if expected is None:
+            return self.send_json(428, {
+                "error": "expected_version_required",
+                "code": 428,
+                "message": "Передайте expected_version или If-Match: защита от потери изменений.",
+                "current_version": old["version"],
+            })
+        if expected < 0:
+            return self.error(400, "Некорректная expected_version")
+        if expected != old["version"]:
+            return self.send_json(409, {
+                "error": "version_conflict",
+                "code": 409,
+                "message": "Запись уже изменилась. Загрузите актуальную версию и повторите.",
+                "expected_version": expected,
+                "current_version": old["version"],
+                "current": current_payload,
+            })
+        return True
+
     def set_session_cookie(self, token):
         self._session_token = token
 
@@ -697,7 +1055,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(204)
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, If-Match")
         self.end_headers()
 
     def do_GET(self):
@@ -740,12 +1098,13 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_DELETE(self):
         parsed = urlparse(self.path)
+        qs = parse_qs(parsed.query)
         try:
             if not parsed.path.startswith("/api/"):
                 return self.error(404, "Не найдено")
             if not API_LIMITER.allow(self.client_ip()):
                 return self.too_many(60)
-            return self.api_delete(parsed.path)
+            return self.api_delete(parsed.path, qs)
         except Exception as e:  # noqa: BLE001
             self.error(500, "Внутренняя ошибка сервера: %s" % e)
 
@@ -783,6 +1142,23 @@ class Handler(BaseHTTPRequestHandler):
         # далее — только авторизованные запросы
         if not self.require_auth():
             return
+
+        if path == "/api/overview":
+            raw_site = (qs.get("site_id") or [""])[0]
+            raw_limit = (qs.get("attention_limit") or ["5"])[0]
+            try:
+                overview_site_id = int(raw_site) if raw_site else None
+                attention_limit = int(raw_limit)
+            except ValueError:
+                return self.error(400, "site_id и attention_limit должны быть числами")
+            conn = db()
+            try:
+                data = build_overview(conn, overview_site_id, attention_limit)
+            finally:
+                conn.close()
+            if data is None:
+                return self.error(404, "Сайт не найден")
+            return self.send_json(200, data)
 
         if path == "/api/sites":
             conn = db()
@@ -999,11 +1375,14 @@ class Handler(BaseHTTPRequestHandler):
         body = self.read_body()
         if body is None:
             return self.error(400, "Некорректный JSON")
+        expected = self.expected_version(body=body)
         conn = db()
         try:
             old = conn.execute("SELECT * FROM sites WHERE id=?", (site_id,)).fetchone()
             if not old:
                 return self.error(404, "Сайт не найден")
+            if not self.require_version(old, expected, row_site(old)):
+                return
             updates, params = [], []
             for f in SITE_FIELDS:
                 if f in body:
@@ -1018,12 +1397,28 @@ class Handler(BaseHTTPRequestHandler):
                 return self.error(400, "Некорректный slug")
             if not updates:
                 return self.error(400, "Нет полей для обновления")
+            updates.append("version = version + 1")
             updates.append("updated_at=?")
-            params += [now_iso(), site_id]
-            conn.execute(f"UPDATE sites SET {', '.join(updates)} WHERE id=?", params)
+            params += [now_iso(), site_id, old["version"]]
+            cur = conn.execute(
+                f"UPDATE sites SET {', '.join(updates)} WHERE id=? AND version=?", params)
+            if cur.rowcount == 0:
+                current = conn.execute("SELECT * FROM sites WHERE id=?", (site_id,)).fetchone()
+                conn.rollback()
+                if not current:
+                    return self.error(404, "Сайт не найден")
+                return self.send_json(409, {
+                    "error": "version_conflict", "code": 409,
+                    "message": "Запись уже изменилась. Загрузите актуальную версию и повторите.",
+                    "expected_version": expected,
+                    "current_version": current["version"],
+                    "current": row_site(current),
+                })
             conn.commit()
             r = conn.execute("SELECT * FROM sites WHERE id=?", (site_id,)).fetchone()
-            self.audit_action("site_update", site_id=site_id, fields=sorted(set(body) & set(SITE_FIELDS)))
+            self.audit_action("site_update", site_id=site_id,
+                              fields=sorted(set(body) & set(SITE_FIELDS)),
+                              old_version=old["version"], new_version=r["version"])
             return self.send_json(200, row_site(r))
         finally:
             conn.close()
@@ -1032,11 +1427,14 @@ class Handler(BaseHTTPRequestHandler):
         body = self.read_body()
         if body is None:
             return self.error(400, "Некорректный JSON")
+        expected = self.expected_version(body=body)
         conn = db()
         try:
             old = conn.execute("SELECT * FROM items WHERE id=?", (item_id,)).fetchone()
             if not old:
                 return self.error(404, "Элемент не найден")
+            if not self.require_version(old, expected, row_item(old)):
+                return
             typ = old["type"]
             data = clean_item_data(typ, body.get("data", {})) if "data" in body \
                 else json.loads(old["data"])
@@ -1044,19 +1442,34 @@ class Handler(BaseHTTPRequestHandler):
                 order = int(body.get("sort_order", old["sort_order"]))
             except (TypeError, ValueError):
                 order = old["sort_order"]
-            conn.execute(
-                "UPDATE items SET data=?, sort_order=?, updated_at=? WHERE id=?",
-                (json.dumps(data, ensure_ascii=False), order, now_iso(), item_id))
+            cur = conn.execute(
+                "UPDATE items SET data=?, sort_order=?, version = version + 1, updated_at=?"
+                " WHERE id=? AND version=?",
+                (json.dumps(data, ensure_ascii=False), order, now_iso(), item_id, old["version"]))
+            if cur.rowcount == 0:
+                current = conn.execute("SELECT * FROM items WHERE id=?", (item_id,)).fetchone()
+                conn.rollback()
+                if not current:
+                    return self.error(404, "Элемент не найден")
+                return self.send_json(409, {
+                    "error": "version_conflict", "code": 409,
+                    "message": "Запись уже изменилась. Загрузите актуальную версию и повторите.",
+                    "expected_version": expected,
+                    "current_version": current["version"],
+                    "current": row_item(current),
+                })
             conn.commit()
             r = conn.execute("SELECT * FROM items WHERE id=?", (item_id,)).fetchone()
-            self.audit_action("item_update", item_id=item_id, type=typ)
+            self.audit_action("item_update", item_id=item_id, type=typ,
+                              old_version=old["version"], new_version=r["version"])
             return self.send_json(200, row_item(r))
         finally:
             conn.close()
 
-    def api_delete(self, path):
+    def api_delete(self, path, qs=None):
         if not self.require_csrf():
             return
+        expected = self.expected_version(qs=qs)
         m = re.match(r"^/api/sites/(\d+)$", path)
         if m:
             conn = db()
@@ -1064,21 +1477,52 @@ class Handler(BaseHTTPRequestHandler):
                 r = conn.execute("SELECT * FROM sites WHERE id=?", (m.group(1),)).fetchone()
                 if not r:
                     return self.error(404, "Сайт не найден")
-                conn.execute("DELETE FROM items WHERE site_id=?", (r["id"],))
-                conn.execute("DELETE FROM sites WHERE id=?", (r["id"],))
+                if not self.require_version(r, expected, row_site(r)):
+                    return
+                cur = conn.execute(
+                    "DELETE FROM sites WHERE id=? AND version=?", (r["id"], r["version"]))
+                if cur.rowcount == 0:
+                    current = conn.execute("SELECT * FROM sites WHERE id=?", (r["id"],)).fetchone()
+                    conn.rollback()
+                    if not current:
+                        return self.error(404, "Сайт не найден")
+                    return self.send_json(409, {
+                        "error": "version_conflict", "code": 409,
+                        "message": "Запись уже изменилась. Загрузите актуальную версию и повторите.",
+                        "expected_version": expected,
+                        "current_version": current["version"],
+                        "current": row_site(current),
+                    })
                 conn.commit()
             finally:
                 conn.close()
             self.audit_action("site_delete", site_id=r["id"], slug=r["slug"])
             return self.send_json(200, {"ok": True})
+
         m = re.match(r"^/api/items/(\d+)$", path)
         if m:
             conn = db()
             try:
-                cur = conn.execute("DELETE FROM items WHERE id=?", (m.group(1),))
-                conn.commit()
-                if cur.rowcount == 0:
+                r = conn.execute("SELECT * FROM items WHERE id=?", (m.group(1),)).fetchone()
+                if not r:
                     return self.error(404, "Элемент не найден")
+                if not self.require_version(r, expected, row_item(r)):
+                    return
+                cur = conn.execute(
+                    "DELETE FROM items WHERE id=? AND version=?", (r["id"], r["version"]))
+                if cur.rowcount == 0:
+                    current = conn.execute("SELECT * FROM items WHERE id=?", (r["id"],)).fetchone()
+                    conn.rollback()
+                    if not current:
+                        return self.error(404, "Элемент не найден")
+                    return self.send_json(409, {
+                        "error": "version_conflict", "code": 409,
+                        "message": "Запись уже изменилась. Загрузите актуальную версию и повторите.",
+                        "expected_version": expected,
+                        "current_version": current["version"],
+                        "current": row_item(current),
+                    })
+                conn.commit()
             finally:
                 conn.close()
             self.audit_action("item_delete", item_id=m.group(1))
