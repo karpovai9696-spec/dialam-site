@@ -275,7 +275,14 @@ async function renderItemsList(content, meta) {
   const grouping = branchGroupingEnabled(type);
   if (isDialam()) await loadBranches(site.id);
   const data = await api(`/api/sites/${site.id}/items?type=${type}`);
-  let items = data.items;
+  let items = data.items.slice();
+  let pinnedDirector = null;
+  if (grouping && type === 'staff') {
+    pinnedDirector = items.find(it => /директор/i.test(String((it.data || {}).role || ''))) || null;
+    if (pinnedDirector) {
+      items = items.filter(it => it.id !== pinnedDirector.id);
+    }
+  }
 
   /* Фильтр по филиалу (для dialam: Сотрудники / Вакансии / Новости) */
   if (grouping && state.branchFilter) {
@@ -315,10 +322,16 @@ async function renderItemsList(content, meta) {
   const heads = ['#', ...colsFn({}).map(h => h[0]), ''].map(h => `<th>${esc(h)}</th>`).join('');
 
   let bodyHtml = '';
-  if (!items.length) {
+  if (!items.length && !pinnedDirector) {
     const span = 2 + colsFn({}).length;
     bodyHtml = `<tr><td colspan="${span}"><div class="empty-hint">Пока пусто. Нажмите «Добавить».</div></td></tr>`;
   } else if (grouping) {
+    /* Директор всегда один и закреплён сверху, вне филиальных групп */
+    let pinnedHtml = '';
+    if (pinnedDirector) {
+      pinnedHtml = `<tr class="branch-group-head"><td colspan="${2 + colsFn({}).length}">РУКОВОДСТВО · 1</td></tr>` +
+        rowHtml(pinnedDirector);
+    }
     /* Группировка по филиалу: заголовок-город, под ним записи */
     const groups = new Map();
     items.forEach(it => {
@@ -330,7 +343,7 @@ async function renderItemsList(content, meta) {
       const ia = state.branches.indexOf(a), ib = state.branches.indexOf(b);
       return (ia < 0 ? 1e9 : ia) - (ib < 0 ? 1e9 : ib);
     });
-    bodyHtml = ordered.map(city =>
+    bodyHtml = pinnedHtml + ordered.map(city =>
       `<tr class="branch-group-head"><td colspan="${2 + colsFn({}).length}">${esc(city)} · ${groups.get(city).length}</td></tr>` +
       groups.get(city).map(rowHtml).join('')
     ).join('');
