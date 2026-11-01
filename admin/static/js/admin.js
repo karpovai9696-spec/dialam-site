@@ -292,13 +292,14 @@ async function renderItemsList(content, meta) {
   }
 
   /* Колонки: при группировке колонку «Филиал» убираем — она вынесена в заголовок группы */
-  let colsFn = LIST_COLUMNS[type];
+  let baseColsFn = LIST_COLUMNS[type];
+  let colsFn = baseColsFn;
   let dropIdx = -1;
   if (grouping) {
-    const probe = colsFn({});
+    const probe = baseColsFn({});
     dropIdx = probe.findIndex(h => h[0] === 'Филиал');
     if (dropIdx >= 0) {
-      colsFn = (i) => colsFn(i).filter((_, idx) => idx !== dropIdx);
+      colsFn = (i) => baseColsFn(i).filter((_, idx) => idx !== dropIdx);
     }
   }
 
