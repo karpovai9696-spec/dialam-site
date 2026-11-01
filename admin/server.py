@@ -17,6 +17,7 @@ import os
 import re
 import secrets
 import sqlite3
+import ssl
 import sys
 import threading
 import time
@@ -33,6 +34,9 @@ STATIC_DIR = os.path.join(BASE_DIR, "static")
 
 # Пути, которые нельзя отдавать как статику
 PROTECTED_DIRS = ("/data/", "/exports/", "/static/../")
+AUDIT_LOG = os.path.join(BASE_DIR, "audit.log")
+SESSIONS_FILE = os.path.join(BASE_DIR, "sessions.json")
+TLS_ENABLED = False
 
 ITEM_TYPES = {
     "branch":   ["city", "address", "phone", "email", "hours", "map_url", "is_active"],
@@ -106,6 +110,49 @@ class RateLimiter:
 
 LOGIN_LIMITER = RateLimiter(10, 15 * 60)   # 10 неудачных попыток / 15 минут
 API_LIMITER = RateLimiter(300, 60)         # 300 API-запросов / минута
+AUDIT_LOCK = threading.Lock()
+
+
+def audit(event, **fields):
+    """Журнал действий администратора: JSONL, без паролей и токенов."""
+    try:
+        record = {"ts": datetime.now(timezone.utc).isoformat(), "event": event}
+        record.update(fields)
+        line = json.dumps(record, ensure_ascii=False)
+        with AUDIT_LOCK:
+            with open(AUDIT_LOG, "a", encoding="utf-8") as f:
+                f.write(line + "\n")
+    except Exception:
+        pass
+
+
+def load_sessions():
+    try:
+        with open(SESSIONS_FILE, encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception:
+        return
+    now = time.time()
+    with SESSIONS_LOCK:
+        for token, sess in data.items():
+            if isinstance(sess, dict) and sess.get("expires", 0) > now and sess.get("csrf"):
+                SESSIONS[token] = sess
+
+
+def save_sessions():
+    with SESSIONS_LOCK:
+        data = {k: dict(v) for k, v in SESSIONS.items()}
+    try:
+        tmp = SESSIONS_FILE + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
+        os.replace(tmp, SESSIONS_FILE)
+        try:
+            os.chmod(SESSIONS_FILE, 0o600)
+        except OSError:
+            pass
+    except Exception:
+        pass
 
 
 def now_iso():
@@ -121,6 +168,7 @@ def create_session():
     csrf = secrets.token_hex(32)
     with SESSIONS_LOCK:
         SESSIONS[token] = {"expires": time.time() + SESSION_TTL, "csrf": csrf}
+    save_sessions()
     return token, csrf
 
 
@@ -144,6 +192,7 @@ def check_session(token):
 def destroy_session(token):
     with SESSIONS_LOCK:
         SESSIONS.pop(token, None)
+    save_sessions()
 
 
 # ---------------------------------------------------------------------------
@@ -553,6 +602,9 @@ class Handler(BaseHTTPRequestHandler):
     def client_ip(self):
         return self.client_address[0] if self.client_address else "unknown"
 
+    def audit_action(self, event, **fields):
+        audit(event, ip=self.client_ip(), **fields)
+
     def too_many(self, retry_after=60):
         self._retry_after = str(int(retry_after))
         return self.error(429, "Слишком много запросов, попробуйте позже")
@@ -797,12 +849,15 @@ class Handler(BaseHTTPRequestHandler):
             pwd = body.get("password", "")
             if not isinstance(pwd, str) or not secrets.compare_digest(pwd, get_password()):
                 LOGIN_LIMITER.hit(ip)
+                self.audit_action("login_failed")
                 return self.error(401, "Неверный пароль")
             LOGIN_LIMITER.reset(ip)
+            self.audit_action("login_ok")
             token, csrf = create_session()
             # cookie должна быть установлена до записи тела ответа (end_headers)
-            self._pending_cookie = ("admin_session=%s; Path=/; HttpOnly; SameSite=Lax; Max-Age=%d"
-                                    % (token, SESSION_TTL))
+            secure = "; Secure" if TLS_ENABLED else ""
+            self._pending_cookie = ("admin_session=%s; Path=/; HttpOnly; SameSite=Lax%s; Max-Age=%d"
+                                    % (token, secure, SESSION_TTL))
             return self.send_json(200, {"ok": True, "role": "admin", "csrf_token": csrf})
 
         if not self.require_csrf():
@@ -812,6 +867,7 @@ class Handler(BaseHTTPRequestHandler):
             tok = self.session_cookie()
             if tok:
                 destroy_session(tok)
+            self.audit_action("logout")
             return self.send_json(200, {"ok": True})
 
         if path == "/api/sites":
@@ -844,6 +900,7 @@ class Handler(BaseHTTPRequestHandler):
             fname = os.path.join(EXPORTS_DIR, slug + ".json")
             with open(fname, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
+            self.audit_action("export_file", site_id=srow["id"], slug=slug)
             return self.send_json(200, {"ok": True, "path": "admin/exports/%s.json" % slug})
 
         return self.error(404, "Не найдено")
@@ -874,6 +931,7 @@ class Handler(BaseHTTPRequestHandler):
                 vals + [ts, ts])
             conn.commit()
             r = conn.execute("SELECT * FROM sites WHERE id=?", (cur.lastrowid,)).fetchone()
+            self.audit_action("site_create", site_id=cur.lastrowid, slug=slug)
             return self.send_json(201, row_site(r))
         finally:
             conn.close()
@@ -898,6 +956,7 @@ class Handler(BaseHTTPRequestHandler):
                 (site_id, typ, json.dumps(data, ensure_ascii=False), order, ts, ts))
             conn.commit()
             r = conn.execute("SELECT * FROM items WHERE id=?", (cur.lastrowid,)).fetchone()
+            self.audit_action("item_create", item_id=cur.lastrowid, site_id=site_id, type=typ)
             return self.send_json(201, row_item(r))
         finally:
             conn.close()
@@ -943,6 +1002,7 @@ class Handler(BaseHTTPRequestHandler):
             conn.execute(f"UPDATE sites SET {', '.join(updates)} WHERE id=?", params)
             conn.commit()
             r = conn.execute("SELECT * FROM sites WHERE id=?", (site_id,)).fetchone()
+            self.audit_action("site_update", site_id=site_id, fields=sorted(set(body) & set(SITE_FIELDS)))
             return self.send_json(200, row_site(r))
         finally:
             conn.close()
@@ -968,6 +1028,7 @@ class Handler(BaseHTTPRequestHandler):
                 (json.dumps(data, ensure_ascii=False), order, now_iso(), item_id))
             conn.commit()
             r = conn.execute("SELECT * FROM items WHERE id=?", (item_id,)).fetchone()
+            self.audit_action("item_update", item_id=item_id, type=typ)
             return self.send_json(200, row_item(r))
         finally:
             conn.close()
@@ -987,6 +1048,7 @@ class Handler(BaseHTTPRequestHandler):
                 conn.commit()
             finally:
                 conn.close()
+            self.audit_action("site_delete", site_id=r["id"], slug=r["slug"])
             return self.send_json(200, {"ok": True})
         m = re.match(r"^/api/items/(\d+)$", path)
         if m:
@@ -998,6 +1060,7 @@ class Handler(BaseHTTPRequestHandler):
                     return self.error(404, "Элемент не найден")
             finally:
                 conn.close()
+            self.audit_action("item_delete", item_id=m.group(1))
             return self.send_json(200, {"ok": True})
         return self.error(404, "Не найдено")
 
@@ -1007,6 +1070,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("Referrer-Policy", "no-referrer")
         self.send_header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        if TLS_ENABLED:
+            self.send_header("Strict-Transport-Security", "max-age=31536000")
         self.send_header("Content-Security-Policy",
                          "default-src 'self'; script-src 'self'; "
                          "style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
@@ -1027,12 +1092,24 @@ def main():
     ap = argparse.ArgumentParser(description="Админ-панель Dialam (прототип)")
     ap.add_argument("--port", type=int, default=8090)
     ap.add_argument("--host", default="127.0.0.1")
+    ap.add_argument("--ssl-cert", default=os.environ.get("ADMIN_SSL_CERT", ""))
+    ap.add_argument("--ssl-key", default=os.environ.get("ADMIN_SSL_KEY", ""))
     args = ap.parse_args()
 
     os.umask(0o077)
+    load_sessions()
     init_db()
+    global TLS_ENABLED
     httpd = ThreadingHTTPServer((args.host, args.port), Handler)
-    print("Админ-панель запущена: http://%s:%d/  (Ctrl+C для остановки)" % (args.host, args.port))
+    scheme = "http"
+    if args.ssl_cert and args.ssl_key:
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+        ctx.load_cert_chain(args.ssl_cert, args.ssl_key)
+        httpd.socket = ctx.wrap_socket(httpd.socket, server_side=True)
+        TLS_ENABLED = True
+        scheme = "https"
+    print("Админ-панель запущена: %s://%s:%d/  (Ctrl+C для остановки)" % (scheme, args.host, args.port))
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

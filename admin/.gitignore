@@ -1,5 +1,9 @@
 # Локальные данные админ-панели (не коммитить)
 data/*.db
 data/*.db-journal
+data/*.db.bak*
 exports/*.json
+sessions.json
+sessions.json.tmp
+audit.log
 __pycache__/
