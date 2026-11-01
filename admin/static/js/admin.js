@@ -311,7 +311,11 @@ async function renderItemsList(content, meta) {
   }
 
   const rowHtml = (it) => {
-    const cells = colsFn(it.data).map(([h, v]) => `<td>${v && String(v).startsWith('<span') ? v : esc(v)}</td>`).join('');
+    const cells = colsFn(it.data).map(([h, v]) => {
+      // Сырой HTML разрешён только для сгенерированного boolBadge, не для данных пользователя.
+      const raw = v && /^<span class="badge (on|off)">(да|нет)<\/span>$/.test(String(v));
+      return `<td>${raw ? v : esc(v)}</td>`;
+    }).join('');
     return `<tr><td>#${it.id}</td>${cells}
       <td class="row-actions">
         <button class="btn btn-ghost btn-sm" data-edit="${it.id}">Изменить</button>
