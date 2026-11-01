@@ -21,9 +21,13 @@ function toast(msg, isError) {
   setTimeout(() => t.remove(), 4200);
 }
 
+let csrfToken = '';
+
 async function api(path, opts) {
   opts = opts || {};
-  const o = { headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin' };
+  const headers = { 'Content-Type': 'application/json' };
+  if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+  const o = { headers, credentials: 'same-origin' };
   if (opts.method) o.method = opts.method;
   if (opts.body !== undefined) o.body = JSON.stringify(opts.body);
   let res;
@@ -178,7 +182,8 @@ function showLogin() {
 }
 
 async function doLogin(password) {
-  await api('/api/login', { method: 'POST', body: { password } });
+  const res = await api('/api/login', { method: 'POST', body: { password } });
+  if (res && res.csrf_token) csrfToken = res.csrf_token;
   await enterApp();
 }
 
@@ -713,9 +718,11 @@ function init() {
 
   // проверка сессии
   fetch('/api/me', { credentials: 'same-origin' })
-    .then(res => {
-      if (res.ok) return enterApp();
-      showLogin();
+    .then(async res => {
+      if (!res.ok) return showLogin();
+      const me = await res.json().catch(() => ({}));
+      if (me.csrf_token) csrfToken = me.csrf_token;
+      return enterApp();
     })
     .catch(() => showLogin());
 }

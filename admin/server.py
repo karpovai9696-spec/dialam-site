@@ -20,6 +20,7 @@ import sqlite3
 import sys
 import threading
 import time
+from collections import deque
 from datetime import datetime, timezone
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -56,9 +57,55 @@ SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9\-]{0,63}$")
 # ---------------------------------------------------------------------------
 # Сессии (в памяти прототипа)
 # ---------------------------------------------------------------------------
-SESSIONS = {}          # token -> expires (unix timestamp)
+SESSIONS = {}          # token -> {"expires": float, "csrf": str}
 SESSIONS_LOCK = threading.Lock()
 SESSION_TTL = 72 * 3600  # 72 часа
+
+
+class RateLimiter:
+    """Простой in-memory limiter по IP/ключу."""
+
+    def __init__(self, limit, window):
+        self.limit = limit
+        self.window = window
+        self.hits = {}
+        self.lock = threading.Lock()
+
+    def _prune(self, key, now):
+        q = self.hits.get(key)
+        while q and q[0] <= now - self.window:
+            q.popleft()
+        if not q:
+            self.hits.pop(key, None)
+        return q
+
+    def blocked(self, key):
+        now = time.time()
+        with self.lock:
+            q = self._prune(key, now)
+            return bool(q and len(q) >= self.limit)
+
+    def hit(self, key):
+        now = time.time()
+        with self.lock:
+            self.hits.setdefault(key, deque()).append(now)
+
+    def allow(self, key):
+        with self.lock:
+            now = time.time()
+            q = self._prune(key, now)
+            if q and len(q) >= self.limit:
+                return False
+            self.hits.setdefault(key, deque()).append(now)
+            return True
+
+    def reset(self, key):
+        with self.lock:
+            self.hits.pop(key, None)
+
+
+LOGIN_LIMITER = RateLimiter(10, 15 * 60)   # 10 неудачных попыток / 15 минут
+API_LIMITER = RateLimiter(300, 60)         # 300 API-запросов / минута
 
 
 def now_iso():
@@ -71,22 +118,27 @@ def get_password():
 
 def create_session():
     token = secrets.token_hex(32)
+    csrf = secrets.token_hex(32)
     with SESSIONS_LOCK:
-        SESSIONS[token] = time.time() + SESSION_TTL
-    return token
+        SESSIONS[token] = {"expires": time.time() + SESSION_TTL, "csrf": csrf}
+    return token, csrf
+
+
+def get_session(token):
+    if not token:
+        return None
+    with SESSIONS_LOCK:
+        sess = SESSIONS.get(token)
+        if not sess:
+            return None
+        if sess["expires"] < time.time():
+            SESSIONS.pop(token, None)
+            return None
+        return sess
 
 
 def check_session(token):
-    if not token:
-        return False
-    with SESSIONS_LOCK:
-        expires = SESSIONS.get(token)
-        if not expires:
-            return False
-        if expires < time.time():
-            SESSIONS.pop(token, None)
-            return False
-        return True
+    return get_session(token) is not None
 
 
 def destroy_session(token):
@@ -498,6 +550,29 @@ class Handler(BaseHTTPRequestHandler):
         m = c.get("admin_session")
         return m.value if m else None
 
+    def client_ip(self):
+        return self.client_address[0] if self.client_address else "unknown"
+
+    def too_many(self, retry_after=60):
+        self._retry_after = str(int(retry_after))
+        return self.error(429, "Слишком много запросов, попробуйте позже")
+
+    def require_csrf(self):
+        sess = get_session(self.session_cookie())
+        if not sess:
+            self.error(401, "Требуется вход в систему")
+            return False
+        given = self.headers.get("X-CSRF-Token") or ""
+        if not secrets.compare_digest(given, sess.get("csrf") or ""):
+            self.error(403, "Неверный CSRF-токен")
+            return False
+        origin = self.headers.get("Origin")
+        host = self.headers.get("Host")
+        if origin and host and urlparse(origin).netloc != host:
+            self.error(403, "Запрос с другого origin запрещён")
+            return False
+        return True
+
     def require_auth(self):
         if check_session(self.session_cookie()):
             return True
@@ -558,6 +633,8 @@ class Handler(BaseHTTPRequestHandler):
         qs = parse_qs(parsed.query)
         try:
             if path.startswith("/api/"):
+                if path != "/api/health" and not API_LIMITER.allow(self.client_ip()):
+                    return self.too_many(60)
                 return self.api_get(path, qs)
             if path.startswith("/static/"):
                 return self.serve_static(path[len("/static"):])
@@ -571,6 +648,8 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if not path.startswith("/api/"):
                 return self.error(404, "Не найдено")
+            if path != "/api/login" and not API_LIMITER.allow(self.client_ip()):
+                return self.too_many(60)
             return self.api_post(path)
         except Exception as e:  # noqa: BLE001
             self.error(500, "Внутренняя ошибка сервера: %s" % e)
@@ -580,6 +659,8 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if not parsed.path.startswith("/api/"):
                 return self.error(404, "Не найдено")
+            if not API_LIMITER.allow(self.client_ip()):
+                return self.too_many(60)
             return self.api_put(parsed.path)
         except Exception as e:  # noqa: BLE001
             self.error(500, "Внутренняя ошибка сервера: %s" % e)
@@ -589,6 +670,8 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if not parsed.path.startswith("/api/"):
                 return self.error(404, "Не найдено")
+            if not API_LIMITER.allow(self.client_ip()):
+                return self.too_many(60)
             return self.api_delete(parsed.path)
         except Exception as e:  # noqa: BLE001
             self.error(500, "Внутренняя ошибка сервера: %s" % e)
@@ -599,8 +682,10 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/health":
             return self.send_json(200, {"status": "ok", "time": now_iso()})
         if path == "/api/me":
-            if check_session(self.session_cookie()):
-                return self.send_json(200, {"authenticated": True, "role": "admin"})
+            sess = get_session(self.session_cookie())
+            if sess:
+                return self.send_json(200, {"authenticated": True, "role": "admin",
+                                            "csrf_token": sess["csrf"]})
             return self.send_json(401, {"authenticated": False})
         m = re.match(r"^/api/public/sites/([a-z0-9\-]+)\.json$", path)
         if m:
@@ -703,19 +788,24 @@ class Handler(BaseHTTPRequestHandler):
 
     def api_post(self, path):
         if path == "/api/login":
+            ip = self.client_ip()
+            if LOGIN_LIMITER.blocked(ip):
+                return self.too_many(15 * 60)
             body = self.read_body()
             if body is None:
                 return self.error(400, "Некорректный JSON")
             pwd = body.get("password", "")
             if not isinstance(pwd, str) or not secrets.compare_digest(pwd, get_password()):
+                LOGIN_LIMITER.hit(ip)
                 return self.error(401, "Неверный пароль")
-            token = create_session()
+            LOGIN_LIMITER.reset(ip)
+            token, csrf = create_session()
             # cookie должна быть установлена до записи тела ответа (end_headers)
             self._pending_cookie = ("admin_session=%s; Path=/; HttpOnly; SameSite=Lax; Max-Age=%d"
                                     % (token, SESSION_TTL))
-            return self.send_json(200, {"ok": True, "role": "admin"})
+            return self.send_json(200, {"ok": True, "role": "admin", "csrf_token": csrf})
 
-        if not self.require_auth():
+        if not self.require_csrf():
             return
 
         if path == "/api/logout":
@@ -815,7 +905,7 @@ class Handler(BaseHTTPRequestHandler):
     # ---- API PUT / DELETE ---------------------------------------------------
 
     def api_put(self, path):
-        if not self.require_auth():
+        if not self.require_csrf():
             return
         m = re.match(r"^/api/sites/(\d+)$", path)
         if m:
@@ -883,7 +973,7 @@ class Handler(BaseHTTPRequestHandler):
             conn.close()
 
     def api_delete(self, path):
-        if not self.require_auth():
+        if not self.require_csrf():
             return
         m = re.match(r"^/api/sites/(\d+)$", path)
         if m:
@@ -911,8 +1001,21 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_json(200, {"ok": True})
         return self.error(404, "Не найдено")
 
-    # override: добавляем Set-Cookie после login
+    # override: добавляем Set-Cookie и security-заголовки
     def end_headers(self):
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        self.send_header("Content-Security-Policy",
+                         "default-src 'self'; script-src 'self'; "
+                         "style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
+                         "font-src 'self'; connect-src 'self'; "
+                         "frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
+        retry = getattr(self, "_retry_after", None)
+        if retry:
+            self.send_header("Retry-After", retry)
+            self._retry_after = None
         cookie = getattr(self, "_pending_cookie", None)
         if cookie:
             self.send_header("Set-Cookie", cookie)
@@ -926,6 +1029,7 @@ def main():
     ap.add_argument("--host", default="127.0.0.1")
     args = ap.parse_args()
 
+    os.umask(0o077)
     init_db()
     httpd = ThreadingHTTPServer((args.host, args.port), Handler)
     print("Админ-панель запущена: http://%s:%d/  (Ctrl+C для остановки)" % (args.host, args.port))
