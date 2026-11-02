@@ -43,6 +43,10 @@
     'orel.html': 'orel',
     'nizhnevartovsk.html': 'nizhnevartovsk',
     'yoshkar-ola.html': 'yoshkar-ola',
+    'strahovye-kompanii-orel.html': 'orel',
+    'strahovye-kompanii-nizhnevartovsk.html': 'nizhnevartovsk',
+    'strahovye-kompanii-yoshkar-ola.html': 'yoshkar-ola',
+    'strahovye-kompanii.html': 'volzhsk',
     'index.html': 'volzhsk',
     '': 'volzhsk'
   };
