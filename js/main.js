@@ -183,20 +183,24 @@
         weekdayIndex = -1;
       }
       var startHour = parseInt(statusEl.getAttribute('data-open-hour') || '7', 10);
+      var startMinute = parseInt(statusEl.getAttribute('data-open-minute') || '0', 10);
       var endHour = parseInt(statusEl.getAttribute('data-close-hour') || '22', 10);
-      var overnight = endHour <= startHour;
+      var endMinute = parseInt(statusEl.getAttribute('data-close-minute') || '0', 10);
+      var startTotal = startHour * 60 + startMinute;
+      var endTotal = endHour * 60 + endMinute;
+      var overnight = endTotal <= startTotal;
       var withinHours;
 
-      if (startHour === endHour) {
+      if (startTotal === endTotal) {
         withinHours = true;
       } else if (!overnight) {
-        withinHours = totalMinutes >= startHour * 60 && totalMinutes < endHour * 60;
+        withinHours = totalMinutes >= startTotal && totalMinutes < endTotal;
       } else {
-        withinHours = totalMinutes >= startHour * 60 || totalMinutes < endHour * 60;
+        withinHours = totalMinutes >= startTotal || totalMinutes < endTotal;
       }
 
-      if (overnight && totalMinutes < endHour * 60) {
-        // 00:00–04:00 — хвост смены предыдущего дня; воскресной смены нет.
+      if (overnight && totalMinutes < endTotal) {
+        // 00:00–конец смены — хвост смены предыдущего дня; воскресной смены нет.
         var previousDay = (weekdayIndex + 6) % 7;
         isOpen = withinHours && previousDay !== 0;
       } else {
