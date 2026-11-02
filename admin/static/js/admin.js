@@ -67,6 +67,26 @@ const state = {
 /* Разделы, которые для dialam группируются/фильтруются по филиалам */
 const BRANCH_GROUPED_TYPES = ['staff', 'vacancy', 'news'];
 
+/* Логотипы брендов в админке (пока для консалтинговой компании) */
+const ADMIN_SITE_LOGOS = {
+  consulting: '/static/img/consulting-logo.svg',
+};
+
+function updateAdminBrand() {
+  const site = state.sites.find(s => s.id === state.siteId);
+  const isConsulting = !!site && site.slug === 'consulting';
+  const logo = $('#brand-logo');
+  const dot = $('#brand-dot');
+  const name = $('#brand-name');
+  const sub = $('#brand-sub');
+  if (logo) logo.classList.toggle('hidden', !isConsulting);
+  if (dot) dot.classList.toggle('hidden', isConsulting);
+  if (name) name.textContent = isConsulting ? 'ГК «Клиники диализа»' : 'Dialam Admin';
+  if (sub) sub.textContent = isConsulting
+    ? 'Консалтинговая компания · админ-панель'
+    : '4 бренда · единая панель';
+}
+
 const VIEWS = {
   overview: { title: 'Обзор' },
   sites: { title: 'Сайты' },
@@ -216,6 +236,7 @@ async function loadSites() {
   sel.innerHTML = state.sites.map(s =>
     `<option value="${s.id}"${s.id === state.siteId ? ' selected' : ''}>${esc(s.name)}${s.is_active ? '' : ' (выкл.)'}</option>`
   ).join('');
+  updateAdminBrand();
 }
 
 /* ============================== РОУТЕР ВИДОВ ============================== */
@@ -726,9 +747,13 @@ function siteFormHtml(site) {
 }
 
 async function renderSites(content, meta) {
-  const rows = state.sites.map(s => `
+  const rows = state.sites.map(s => {
+    const logo = ADMIN_SITE_LOGOS[s.slug]
+      ? `<img src="${ADMIN_SITE_LOGOS[s.slug]}" class="site-logo" alt="">`
+      : '';
+    return `
     <tr>
-      <td>${esc(s.name)}<div class="muted" style="font-size:.8rem">${esc(s.slug)}</div></td>
+      <td><div class="site-name-with-logo">${logo}<div>${esc(s.name)}<div class="muted" style="font-size:.8rem">${esc(s.slug)}</div></div></div></td>
       <td>${esc(s.brand)}</td>
       <td>${esc(s.domain || '—')}</td>
       <td>${boolBadge(s.is_active)}</td>
@@ -737,7 +762,8 @@ async function renderSites(content, meta) {
         <button class="btn btn-ghost btn-sm" data-edit-site="${s.id}">Изменить</button>
         <button class="btn btn-danger-ghost btn-sm" data-del-site="${s.id}">Удалить</button>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
   content.innerHTML = `
     <div class="page-head">
       <h2>${esc(meta.title)}</h2>
@@ -978,6 +1004,7 @@ function init() {
     state.siteId = parseInt(ev.target.value, 10);
     state.branchFilter = '';
     state.attentionExpanded = false;
+    updateAdminBrand();
     await loadBranches(state.siteId);
     renderView();
   });

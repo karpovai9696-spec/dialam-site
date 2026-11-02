@@ -86,6 +86,9 @@ textarea.input{min-height:110px;resize:vertical}
 .topbar-brand{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .brand-dot{width:38px;height:38px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;
   color:#fff;font-size:19px;background:linear-gradient(135deg,var(--teal-600),var(--teal-800))}
+.brand-logo-img{height:42px;width:auto;display:block}
+.site-name-with-logo{display:flex;align-items:center;gap:9px}
+.site-logo{width:32px;height:32px;object-fit:contain;flex-shrink:0}
 .brand-name{font-weight:700;color:var(--ink);font-size:1.1rem}
 .brand-sub{font-size:.8rem;color:var(--muted)}
 .topbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
