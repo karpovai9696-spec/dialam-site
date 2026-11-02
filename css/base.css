@@ -385,6 +385,15 @@ h4 {
   text-align: left;
 }
 
+a.city-menu__option {
+  color: inherit;
+  text-decoration: none;
+}
+
+a.city-menu__option:hover {
+  background-color: var(--teal-050);
+}
+
 .city-menu__option.is-current {
   background-color: var(--teal-050);
   color: var(--ink);

@@ -1,0 +1,55 @@
+/* ===== Филиал «Орёл» ===== */
+.branch-page .page-title{margin-bottom:6px}
+.branch-page .breadcrumbs{margin-bottom:14px}
+.branch-kicker{display:inline-flex;align-items:center;gap:8px;margin-bottom:12px;
+  color:var(--teal-700);font-size:.78rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.branch-kicker::before{content:"";width:24px;height:2px;background:var(--teal-600);border-radius:2px}
+.branch-lead{max-width:620px;margin:0 0 18px;color:var(--text);font-size:1.05rem;line-height:1.65}
+.branch-hero .hero-content{align-self:center}
+.branch-hero .hero-title{font-size:clamp(1.8rem,3.2vw,2.6rem);margin-bottom:14px}
+.branch-facts{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
+.branch-fact{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid var(--border);
+  border-radius:var(--r-pill);background:rgba(255,255,255,.58);color:var(--ink);font-size:.86rem;font-weight:600}
+.branch-fact__label{color:var(--muted);font-weight:500}
+.branch-fact a{color:var(--teal-800);text-decoration:none}
+.branch-fact a:hover{text-decoration:underline}
+.branch-hero .hero-photo{min-height:330px;object-fit:cover}
+.branch-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:16px 0 0}
+.branch-card{padding:18px 20px;border-radius:var(--r-md);border:1px solid var(--border);
+  background:rgba(255,255,255,.62);box-shadow:var(--shadow-sm)}
+.branch-card h3{margin:0 0 7px;font-size:1rem;color:var(--ink)}
+.branch-card p{margin:0;color:var(--text);font-size:.9rem;line-height:1.55}
+.branch-section{margin:16px 0}
+.branch-section .section-title{margin-bottom:12px}
+.branch-vacancies{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.branch-vacancies .vacancy-card{margin:0}
+.branch-vacancy-contact{margin:14px 0 0;font-size:.9rem;color:var(--text)}
+.branch-vacancy-contact a{color:var(--teal-800)}
+.branch-contact-layout{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;align-items:start}
+.branch-contact-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.branch-contact-item{display:flex;flex-direction:column;gap:2px;padding-bottom:9px;border-bottom:1px solid var(--border)}
+.branch-contact-item:last-child{border-bottom:0;padding-bottom:0}
+.branch-contact-item span{font-size:.78rem;color:var(--muted)}
+.branch-contact-item a,.branch-contact-item strong{font-size:.97rem;color:var(--ink);font-weight:600;text-decoration:none}
+.branch-contact-item a:hover{color:var(--teal-700)}
+.branch-map-card{padding:18px;border:1px solid var(--border);border-radius:var(--r-md);
+  background:linear-gradient(135deg,rgba(186,240,224,.38),rgba(214,205,250,.34))}
+.branch-map-card h3{margin:0 0 6px;font-size:1rem}
+.branch-map-card p{margin:0 0 12px;color:var(--text);font-size:.9rem;line-height:1.5}
+.branch-map-link{display:inline-flex;align-items:center;gap:7px;color:var(--teal-800);font-weight:700;
+  font-size:.9rem;text-decoration:none}
+.branch-map-link:hover{text-decoration:underline}
+.branch-legal{margin:16px 0 0;font-size:.82rem;color:var(--muted);line-height:1.55}
+.branch-legal a{color:var(--teal-800)}
+.branch-status-note{display:flex;align-items:center;gap:8px;margin:8px 0 0;font-size:.85rem;color:var(--muted)}
+.branch-status-note .status{margin:0}
+@media (max-width:900px){
+  .branch-grid{grid-template-columns:1fr}
+  .branch-vacancies{grid-template-columns:1fr}
+  .branch-contact-layout{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  .branch-facts{display:grid;grid-template-columns:1fr}
+  .branch-fact{justify-content:flex-start}
+  .branch-hero .hero-media{display:block}
+}

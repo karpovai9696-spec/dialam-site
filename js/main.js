@@ -179,7 +179,9 @@
 
       var totalMinutes = hour * 60 + minute;
       var isSunday = weekday === 'Sun';
-      var withinHours = totalMinutes >= 7 * 60 && totalMinutes < 22 * 60;
+      var startHour = parseInt(statusEl.getAttribute('data-open-hour') || '7', 10);
+      var endHour = parseInt(statusEl.getAttribute('data-close-hour') || '22', 10);
+      var withinHours = totalMinutes >= startHour * 60 && totalMinutes < endHour * 60;
 
       isOpen = !isSunday && withinHours;
     } catch (e) {
@@ -189,7 +191,8 @@
     statusEl.classList.toggle('is-closed', !isOpen);
     statusEl.setAttribute(
       'title',
-      'Режим работы (МСК): Пн–Сб 07:00–22:00, Вс — выходной'
+      'Режим работы (МСК): ' +
+        (statusEl.getAttribute('data-hours-label') || 'Пн–Сб 07:00–22:00, Вс — выходной')
     );
 
     var textNode = statusEl.querySelector('.status__text');
