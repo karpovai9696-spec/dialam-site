@@ -178,12 +178,30 @@
       }
 
       var totalMinutes = hour * 60 + minute;
-      var isSunday = weekday === 'Sun';
+      var weekdayIndex = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }[weekday];
+      if (weekdayIndex === undefined) {
+        weekdayIndex = -1;
+      }
       var startHour = parseInt(statusEl.getAttribute('data-open-hour') || '7', 10);
       var endHour = parseInt(statusEl.getAttribute('data-close-hour') || '22', 10);
-      var withinHours = totalMinutes >= startHour * 60 && totalMinutes < endHour * 60;
+      var overnight = endHour <= startHour;
+      var withinHours;
 
-      isOpen = !isSunday && withinHours;
+      if (startHour === endHour) {
+        withinHours = true;
+      } else if (!overnight) {
+        withinHours = totalMinutes >= startHour * 60 && totalMinutes < endHour * 60;
+      } else {
+        withinHours = totalMinutes >= startHour * 60 || totalMinutes < endHour * 60;
+      }
+
+      if (overnight && totalMinutes < endHour * 60) {
+        // 00:00–04:00 — хвост смены предыдущего дня; воскресной смены нет.
+        var previousDay = (weekdayIndex + 6) % 7;
+        isOpen = withinHours && previousDay !== 0;
+      } else {
+        isOpen = withinHours && weekdayIndex !== 0;
+      }
     } catch (e) {
       isOpen = true;
     }
