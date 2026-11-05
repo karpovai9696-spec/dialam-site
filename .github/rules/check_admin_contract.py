@@ -39,9 +39,16 @@ def norm(path: str) -> str:
     return path
 
 
+TABLE_ROW_RE = re.compile(r"\|\s*(GET|POST|PUT|PATCH|DELETE)\s*\|\s*`?(/api/[^`|\s]+)`?\s*\|")
+
+
 def documented(doc: Path) -> set[tuple[str, str]]:
     found: set[tuple[str, str]] = set()
-    for match in DOC_RE.finditer(doc.read_text(encoding="utf-8", errors="replace")):
+    text = doc.read_text(encoding="utf-8", errors="replace")
+    for match in DOC_RE.finditer(text):
+        found.add((match.group(1), norm(match.group(2))))
+    # markdown-таблицы: | GET | `/api/path` | ...
+    for match in TABLE_ROW_RE.finditer(text):
         found.add((match.group(1), norm(match.group(2))))
     return found
 

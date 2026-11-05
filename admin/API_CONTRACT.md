@@ -150,3 +150,69 @@ UI не затирает чужие изменения: показывает с�
 ### Создание
 
 `POST` версию не требует; сервер возвращает созданную запись с `version: 1`.
+
+---
+
+## 3. Полный перечень маршрутов
+
+Сверяется автоматически: `python tools/check_admin_contract.py --strict admin`
+(в CI — шаг «Admin API contract matches server routes»). Добавили маршрут в
+`server.py` — допишите его сюда, иначе это станет расхождением контракта.
+
+Обозначения: **session** — cookie `admin_session`; **csrf** — заголовок
+`X-CSRF-Token` из `/api/me` или `/api/login` (для мутаций обязателен, чужой
+`Origin` отклоняется); **version** — `expected_version` в теле, `If-Match`
+или `?version=` (см. §2); **auth** — требуется вход.
+
+### Служебные и публичные
+
+| Метод | Путь | Доступ | Ответ / назначение |
+|---|---|---|---|
+| GET | `/api/health` | без auth | `{"status":"ok","time":<iso>}` |
+| GET | `/api/me` | session | `{"authenticated":true,"role":"admin","csrf_token":<token>}`; без сессии — `401 {"authenticated":false}` |
+| GET | `/api/public/sites` | без auth, CORS | `{"sites":[{slug,name,brand,domain,tagline}]}` — только `is_active=1` |
+| GET | `/api/public/sites/{slug}.json` | без auth, CORS | публичный JSON сайта по slug; `404`, если сайта нет |
+
+### Чтение (auth)
+
+| Метод | Путь | Назначение |
+|---|---|---|
+| GET | `/api/overview?site_id=&attention_limit=` | сводка, см. §1 |
+| GET | `/api/sites` | `{"sites":[…]}` + `counts` по типам элементов |
+| GET | `/api/sites/{id}` | сайт (все поля `SITE_FIELDS`) или `404` |
+| GET | `/api/sites/{id}/items?type=` | элементы сайта; `type` — из списка типов ниже; сортировка `sort_order, id` |
+| GET | `/api/items/{id}` | элемент или `404` |
+| GET | `/api/sites/{id}/export` | экспорт сайта для статики (JSON), `404` если сайта нет |
+
+### Запись (session + csrf)
+
+| Метод | Путь | Тело/параметры | Назначение |
+|---|---|---|---|
+| POST | `/api/login` | `{"password": "…"}` | ставит cookie `admin_session` (HttpOnly, SameSite=Lax, 72 ч), возвращает `csrf_token`; лимит неудачных попыток на IP |
+| POST | `/api/logout` | — | уничтожает сессию, audit `logout` |
+| POST | `/api/sites` | `slug`,`name` обязательны; остальные поля `SITE_FIELDS` | создаёт сайт, `version: 1`; slug — латиница/цифры/дефис, 2–64 симв. |
+| POST | `/api/sites/{id}/items` | `type` (обязателен), `data` (объект), `sort_order` | создаёт элемент, `version: 1`; поля `data` очищаются по типу |
+| POST | `/api/sites/{id}/export-file` | — | пишет `admin/exports/{slug}.json`, audit `export_file` |
+| PUT | `/api/sites/{id}` | поля `SITE_FIELDS` + version | обновляет сайт, `version+1` |
+| PUT | `/api/items/{id}` | поля `data` + version | обновляет элемент, `version+1` |
+| DELETE | `/api/sites/{id}` | version | удаляет сайт; элементы удаляются каскадом (`ON DELETE CASCADE`) |
+| DELETE | `/api/items/{id}` | version | удаляет элемент |
+
+Ошибки версий — §2 (`428` без версии, `409 version_conflict`).
+
+### Типы элементов и допустимые поля `data`
+
+- `branch`: city, address, phone, email, hours, map_url, is_active
+- `license`: number, issued_by, issued_at, file_url, note
+- `news`: title, date, excerpt, body, image_url, published, branch
+- `vacancy`: title, city, employment, salary, description, requirements, contact_email, published, branch
+- `staff`: name, role, branch, phone, email, education, accreditation, photo
+- `service`: name, category, description, price, is_active
+- `document`: title, category, file_url, published
+- `setting`: key, value
+
+### Поля сайта (`SITE_FIELDS`)
+
+slug, name, brand, domain, tagline, description, legal_name, inn, ogrn,
+license_number, license_issued_by, license_date, phone, email, address, theme,
+is_active.
