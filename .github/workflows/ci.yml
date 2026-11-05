@@ -24,3 +24,5 @@ jobs:
         run: node --check admin/static/js/admin.js
       - name: Admin static links and assets
         run: python .github/rules/find_broken_links.py --strict admin
+      - name: Admin API contract matches server routes
+        run: python .github/rules/check_admin_contract.py --strict admin

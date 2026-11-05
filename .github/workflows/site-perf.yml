@@ -23,7 +23,7 @@ jobs:
         run: |
           import hashlib, pathlib, sys
           ok = True
-          for name in ("site_perf.py", "find_broken_links.py"):
+          for name in ("site_perf.py", "find_broken_links.py", "check_admin_contract.py"):
               tool = pathlib.Path(".github/rules") / name
               stamp = pathlib.Path(".github/rules") / (name + ".sha256")
               actual = hashlib.sha256(tool.read_bytes()).hexdigest()
