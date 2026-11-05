@@ -30,9 +30,18 @@ A_RE = re.compile(r'<a\b[^>]*\bhref\s*=\s*"([^"]*)"', re.I)
 LINK_RE = re.compile(r'<link\b[^>]*\bhref\s*=\s*"([^"]*)"', re.I)
 SCRIPT_RE = re.compile(r'<script\b[^>]*\bsrc\s*=\s*"([^"]*)"', re.I)
 SOURCE_RE = re.compile(r'<(?:source|video|audio)\b[^>]*\bsrc\s*=\s*"([^"]*)"', re.I)
+CSS_URL_RE = re.compile(r"url\(([^)]+)\)", re.I)
 ID_RE = re.compile(r'\bid\s*=\s*"([^"]+)"', re.I)
 HTML_EXT = {".html", ".htm"}
 SKIP_SCHEMES = ("http://", "https://", "//", "mailto:", "tel:", "javascript:", "data:", "sms:")
+
+
+def iter_files(root: Path, suffixes: set[str]):
+    for p in root.rglob("*"):
+        if p.is_file() and p.suffix.lower() in suffixes:
+            if any(part in SKIP_DIRS for part in p.relative_to(root).parts):
+                continue
+            yield p
 
 
 def html_files(root: Path):
@@ -111,6 +120,26 @@ def check_site(root: Path) -> list[str]:
                 ids = id_cache.setdefault(target, collect_ids(target))
                 if anchor not in ids:
                     problems.append(f"{rel_page}: нет якоря «#{anchor}» в {target.relative_to(root).as_posix()}")
+
+    # CSS: url(...) на локальные файлы (шрифты, фоновые картинки)
+    for css in iter_files(root, {".css"}):
+        rel_css = css.relative_to(root).as_posix()
+        try:
+            text = css.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            problems.append(f"{rel_css}: не читается")
+            continue
+        for raw in CSS_URL_RE.findall(text):
+            url = raw.strip().strip("\"'")
+            if not url or url.startswith(("data:", "#", "var(", "http://", "https://", "//")):
+                continue
+            if "%BASE_URL%" in url:
+                url = url.replace("%BASE_URL%", "/")
+            path = urlsplit(url).path
+            if not path:
+                continue
+            if _target_exists(root, css.parent, path) is None:
+                problems.append(f"{rel_css}: нет файла для url(«{url}»)")
     return problems
 
 
