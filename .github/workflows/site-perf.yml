@@ -18,6 +18,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Vendored tool matches its hash
+        shell: python
+        run: |
+          import hashlib, pathlib, sys
+          tool = pathlib.Path(".github/rules/site_perf.py")
+          stamp = pathlib.Path(".github/rules/site_perf.py.sha256")
+          actual = hashlib.sha256(tool.read_bytes()).hexdigest()
+          expected = stamp.read_text(encoding="utf-8").split()[0]
+          print(f"vendored site_perf.py {actual[:12]} expected {expected[:12]}")
+          if actual != expected:
+              print("DRIFT: выполните tools/sync_site_perf.py --apply в рабочей папке")
+              sys.exit(1)
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
