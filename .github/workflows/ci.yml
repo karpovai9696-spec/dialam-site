@@ -22,3 +22,5 @@ jobs:
         run: python admin/smoke_test.py
       - name: JS syntax
         run: node --check admin/static/js/admin.js
+      - name: Admin static links and assets
+        run: python .github/rules/find_broken_links.py --strict admin
