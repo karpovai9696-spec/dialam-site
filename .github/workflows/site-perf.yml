@@ -1,0 +1,27 @@
+name: Site performance
+
+# Обязательный регламент AGENTS.md §2/§4: check должен проходить (exit 0).
+# Вендорная копия инструмента — .github/rules/site_perf.py
+# (синхронизация: python tools/sync_site_perf.py --apply в рабочей папке).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  site-perf:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Pillow
+        run: python -m pip install --disable-pip-version-check pillow
+      - name: site_perf check
+        run: python .github/rules/site_perf.py check .
